@@ -18,50 +18,39 @@ class ResearchAgent:
     def __init__(self):
         self.llm = get_llm_provider()
         self.system_prompt = """
-You are an academic AI assistant for Campus AI.
+You are a high-level Research & Academic AI Analyst for Campus AI.
 
-Always respond using the following structure.
-
-Section 1 — General Explanation
-Provide a comprehensive, detailed, and professionally formatted explanation of the concept. Use markdown (bolding, bullet points, or LaTeX math if applicable) to make the response feel like a high-quality AI tutor. Cover the 'what', 'how', and 'why' of the topic.
-
-Section 2 — Regulation Difference
-Provide a short comparison of how the **specific topic** mentioned in the general explanation is structured or emphasized in the R23 and R20 regulations/syllabuses.
+Your goal is to provide comprehensive, detailed, and professionally formatted explanations of the search queries or concepts provided by the user.
 
 Rules:
+1. **General Explanation**: Provide a deep-dive analysis of the topic. Use markdown (bolding, headers, bullet points, or LaTeX math if applicable) to make the response highly readable and tutoring-like.
+2. **Structure**: Cover the 'what', 'how', and 'why' of the topic clearly.
+3. **Context Usage**: Use the provided search results and academic context to ground your answer in factual, up-to-date data. If information is missing from context, use your internal knowledge to provide a complete answer.
+4. **Professionalism**: Maintain a helpful, academic, yet accessible tone. Avoid filler or conversational fluff at the beginning or end of your explanation.
+5. **STRICT RELEVANCE**: Only focus on the user's research query. Do not talk about hostel rules, performance, or unrelated campus conduct.
+6. **CONFIDENCE SCORE**: At the very end of EVERY response, append a confidence block in EXACTLY this format (no deviations):
 
-1. Always generate a normal explanation first.
-2. After the explanation, add a section titled:
-
-🔍 Difference
-
-3. Provide two short lines describing how the **query topic** specifically differs between the R23 and R20 syllabuses.
-
-4. Use the format (STRICT: Label on its own line, no colons):
-
-🔍 Difference
-
-R23 Regulation
-(how the topic is taught in R23)
-
-R20 Regulation
-(how the topic is taught in R20)
-
-5. **STRICT RELEVANCE**: Only use the provided context if it is directly related to the academic topic. If the context contains unrelated campus rules (e.g., hostel, fees, attendance), IGNORE them.
-6. **STRICT RELEVANCE**: Only use the provided context if it is directly related to the academic topic. If the context contains unrelated campus rules (e.g., hostel, fees, attendance), IGNORE them.
-7. If no relevant document context for the topic is found, but the topic is clearly academic/syllabus-related, generate a logical syllabus difference based on your knowledge of standard R20 vs R23 curriculum trends (e.g., R23 usually being more application-oriented).
-8. **ONLY SKIP** Section 2 if the question is purely conversational (e.g., "Hi", "How are you?") and has no academic or campus relation.
-9. Keep the regulation explanation concise (1–2 lines only).
-10. NEVER talk about hostel rules, performance, or general campus conduct in an academic answer. 
+:::confidence
+SCORE: <number between 60 and 99>%
+- <short point explaining what makes this answer reliable, e.g. "Based on widely documented academic sources">
+- <short point about any uncertainty or limitation, e.g. "Some implementation details may vary by version">
+- <short point about data freshness or scope, e.g. "Core concepts are stable and well-established">
+:::
 """
 
-    async def research(self, query: str, context: str = "") -> str:
+    async def research(self, query: str, context: str = "", web_context: str = "") -> str:
         """
         Execute research task and return structured response.
         """
+        full_context = ""
+        if context:
+            full_context += f"Academic/Document Context:\n{context}\n\n"
+        if web_context:
+            full_context += f"Web Search Context:\n{web_context}\n\n"
+
         messages = [
             {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": f"Context from documents:\n{context}\n\nQuery: {query}" if context else query}
+            {"role": "user", "content": f"Context for Research:\n{full_context}\n\nQuery: {query}" if full_context else query}
         ]
         
         try:
@@ -70,13 +59,19 @@ R20 Regulation
             logger.error(f"ResearchAgent failed: {e}")
             raise
 
-    async def stream_research(self, query: str, context: str = "") -> AsyncIterator[str]:
+    async def stream_research(self, query: str, context: str = "", web_context: str = "") -> AsyncIterator[str]:
         """
         Stream research results.
         """
+        full_context = ""
+        if context:
+            full_context += f"Academic/Document Context:\n{context}\n\n"
+        if web_context:
+            full_context += f"Web Search Context:\n{web_context}\n\n"
+
         messages = [
             {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": f"Context from documents:\n{context}\n\nQuery: {query}" if context else query}
+            {"role": "user", "content": f"Context for Research:\n{full_context}\n\nQuery: {query}" if full_context else query}
         ]
         
         try:

@@ -57,6 +57,7 @@ async def stream_message(
                 user_message=body.message,
                 user_id=current_user.id,
                 db=db,
+                metadata=body.metadata,
             ):
                 data = json.dumps(result)
                 yield f"data: {data}\n\n"

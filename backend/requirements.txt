@@ -34,3 +34,6 @@ slowapi==0.1.9
 sentence-transformers==3.3.1
 faiss-cpu==1.9.0
 pypdf==5.1.0
+
+# Search
+duckduckgo-search==6.3.3

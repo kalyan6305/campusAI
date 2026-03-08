@@ -33,3 +33,8 @@ def setup_logging() -> None:
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("uvicorn.access").setLevel(logging.INFO)
+    # primp (used internally by duckduckgo_search) logs a harmless WARNING when
+    # the chrome impersonation profile string doesn't match its version table.
+    # The fallback to 'random' works fine, so we suppress this noise.
+    logging.getLogger("primp").setLevel(logging.ERROR)
+    logging.getLogger("primp.impersonate").setLevel(logging.ERROR)

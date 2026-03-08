@@ -15,7 +15,7 @@ from app.db.base import Base
 from app.core.config import get_settings
 
 # Import all models so metadata is populated
-from app.models import user, session, message  # noqa: F401
+from app.models import user, session, message, career, voice_session, voice_message  # noqa: F401
 
 config = context.config
 

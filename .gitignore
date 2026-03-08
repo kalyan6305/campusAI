@@ -1,0 +1,25 @@
+# Node
+node_modules/
+dist/
+build/
+.vscode/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project Specific
+backend/venv/
+frontend/node_modules/
+git_status.txt

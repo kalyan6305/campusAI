@@ -28,5 +28,9 @@ def get_llm_provider() -> LLMProvider:
         from app.llm.gemini_provider import GeminiProvider
         return GeminiProvider()
 
+    if provider == "groq":
+        from app.llm.groq_provider import GroqProvider
+        return GroqProvider()
+
 
     raise ValueError(f"Unknown LLM_PROVIDER: {provider!r}")
