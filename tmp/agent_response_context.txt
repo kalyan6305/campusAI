@@ -1,0 +1,12 @@
+## Section 1 — General Explanation
+**Interference of Light** is a fundamental concept in physics that describes the phenomenon where two or more light waves overlap to form a new wave pattern. This occurs when light waves from different sources or paths meet at a point in space, resulting in either **constructive interference** (where the waves reinforce each other) or **destructive interference** (where the waves cancel each other out). The interference pattern can be observed as a series of bright and dark fringes or rings, depending on the specific conditions. Key factors that influence interference include:
+* **Coherence length**: the distance over which the light waves remain correlated and can interfere with each other.
+* **Wavelength**: the distance between successive peaks or troughs of the light wave, which affects the spacing of the interference fringes.
+* **Path difference**: the difference in distance traveled by the light waves from different sources or paths, which determines whether constructive or destructive interference occurs.
+
+## Section 2 — Regulation Difference
+🔍 Difference
+R23 Regulation
+emphasis on laser and coherence length in interference studies.
+R20 Regulation
+focus on Newton's rings and thin films to demonstrate interference principles.
