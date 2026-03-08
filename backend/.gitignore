@@ -1,0 +1,7 @@
+*.gguf
+*.bin
+*.pt
+*.onnx
+venv/
+__pycache__/
+.env
