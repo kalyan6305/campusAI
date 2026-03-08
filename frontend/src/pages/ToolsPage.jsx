@@ -5,44 +5,15 @@ import ResearchSidebar from '../components/sidebar/ResearchSidebar';
 import useChatStore from '../store/chatStore';
 
 const ToolsPage = () => {
-    const { sendMessage, isStreaming, activeSessionId, createSession } = useChatStore();
+    const { sendMessage, isStreaming, activeSessionId, createSession, researchSources } = useChatStore();
     const [activeTool, setActiveTool] = useState('browser');
-    const [researchResults, setResearchResults] = useState({
-        browser: [],
-        social: []
-    });
 
     const handleSend = async (content) => {
         if (!activeSessionId) {
             await createSession('Research Session');
         }
 
-        // Simulate search result population
-        simulateSearch(content);
-
         await sendMessage(content, { mode: 'tools' });
-    };
-
-    const simulateSearch = (query) => {
-        // Mocking research discovery
-        const webSources = [
-            { source: 'academic-journal.org', title: `Deep Analysis of ${query}`, snippet: `Recent findings regarding ${query} suggest a significant shift in understanding...` },
-            { source: 'tech-review.com', title: `The Impact of ${query} on Modern Industry`, snippet: `Experts are evaluating how ${query} integrates with existing frameworks...` },
-            { source: 'wiki-pedia.org', title: `${query} - Comprehensive Overview`, snippet: `Detailed historical context and technical definitions related to ${query}...` }
-        ];
-
-        const socialSources = [
-            { source: 'twitter.com', title: `#${query.replace(/\s+/g, '')} - Viral Discussion`, snippet: `The community is actively discussing ${query} with mixed reactions...` },
-            { source: 'reddit.com', title: `r/Intelligence: What do we think about ${query}?`, snippet: `A highly upvoted thread explores the practical implications of ${query}...` },
-            { source: 'linkedin.com', title: `Professional Insights on ${query}`, snippet: `Industry leaders share their perspectives on the strategic value of ${query}...` }
-        ];
-
-        setTimeout(() => {
-            setResearchResults({
-                browser: webSources,
-                social: socialSources
-            });
-        }, 1000);
     };
 
     return (
@@ -52,7 +23,8 @@ const ToolsPage = () => {
                 <ResearchSidebar
                     activeTool={activeTool}
                     setActiveTool={setActiveTool}
-                    results={researchResults}
+                    results={researchSources}
+                    isStreaming={isStreaming}
                 />
             </div>
 
@@ -63,7 +35,7 @@ const ToolsPage = () => {
                         <h1 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-tight uppercase">Research Dashboard</h1>
                         <div className="flex items-center gap-2 mt-1">
                             <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">AI Analyst Active</p>
+                            <p className="text-[9px] text-gray-400 font-black uppercase tracking-[0.15em]">AI Analyst Active</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">

@@ -17,7 +17,7 @@ from app.db.base import Base, engine
 from app.utils.exceptions import register_exception_handlers
 
 # Ensure all models are imported so Alembic and create_all see them
-from app.models import user, session, message  # noqa: F401
+from app.models import user, session, message, voice_session, voice_message  # noqa: F401
 
 logger = logging.getLogger(__name__)
 

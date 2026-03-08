@@ -1,11 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 
-export default function ChatInput({ onSend, disabled }) {
+export default function ChatInput({ onSend, disabled, voiceState, onVoiceToggle }) {
     const [input, setInput] = useState('');
-    const [isListening, setIsListening] = useState(false);
+    const [isListeningLocal, setIsListeningLocal] = useState(false);
     const recognitionRef = useRef(null);
 
+    // Determine if we use external voice control or internal
+    const hasExternalVoice = typeof onVoiceToggle === 'function';
+    const isListening = hasExternalVoice ? voiceState === 'listening' : isListeningLocal;
+    const isSpeaking = hasExternalVoice && voiceState === 'speaking';
+
     useEffect(() => {
+        if (hasExternalVoice) return; // External control handles recognition
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
             recognitionRef.current = new SpeechRecognition();
@@ -16,25 +22,29 @@ export default function ChatInput({ onSend, disabled }) {
             recognitionRef.current.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
                 setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
-                setIsListening(false);
+                setIsListeningLocal(false);
             };
 
             recognitionRef.current.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
-                setIsListening(false);
+                setIsListeningLocal(false);
             };
 
             recognitionRef.current.onend = () => {
-                setIsListening(false);
+                setIsListeningLocal(false);
             };
         }
-    }, []);
+    }, [hasExternalVoice]);
 
     const toggleListening = () => {
-        if (isListening) {
+        if (hasExternalVoice) {
+            onVoiceToggle();
+            return;
+        }
+        if (isListeningLocal) {
             recognitionRef.current?.stop();
         } else {
-            setIsListening(true);
+            setIsListeningLocal(true);
             recognitionRef.current?.start();
         }
     };
@@ -53,6 +63,15 @@ export default function ChatInput({ onSend, disabled }) {
             handleSubmit(e);
         }
     };
+
+    // Determine mic button styling
+    const micClassName = isListening
+        ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+        : isSpeaking
+            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+            : 'text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-gray-800';
+
+    const micTitle = isListening ? 'Listening...' : isSpeaking ? 'AI Speaking...' : 'Voice input';
 
     return (
         <form onSubmit={handleSubmit} className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
@@ -84,11 +103,9 @@ export default function ChatInput({ onSend, disabled }) {
                 <button
                     type="button"
                     onClick={toggleListening}
-                    className={`p-2 rounded-xl transition-all duration-200 ${isListening
-                        ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                        : 'text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-gray-800'
-                        }`}
-                    title={isListening ? 'Listening...' : 'Voice input'}
+                    disabled={isSpeaking}
+                    className={`p-2 rounded-xl transition-all duration-200 ${micClassName}`}
+                    title={micTitle}
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />

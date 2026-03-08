@@ -12,6 +12,7 @@ import AgentsPage from './pages/AgentsPage';
 import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage';
 import AuthPage from './pages/AuthPage';
+import VoicePage from './pages/VoicePage';
 import MainLayout from './components/layout/MainLayout';
 import ProtectedLayout from './components/layout/ProtectedLayout';
 
@@ -109,6 +110,16 @@ export default function App() {
                         <ProtectedRoute>
                             <ProtectedLayout>
                                 <ProfilePage />
+                            </ProtectedLayout>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/voice"
+                    element={
+                        <ProtectedRoute>
+                            <ProtectedLayout>
+                                <VoicePage />
                             </ProtectedLayout>
                         </ProtectedRoute>
                     }

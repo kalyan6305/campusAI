@@ -17,6 +17,7 @@ class MessageSchema(BaseModel):
 class ChatRequest(BaseModel):
     session_id: int
     message: str = Field(min_length=1, max_length=16_000)
+    metadata: dict = None
 
 
 class ChatResponse(BaseModel):

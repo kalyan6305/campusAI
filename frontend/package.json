@@ -10,7 +10,10 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@picovoice/porcupine-web": "^4.0.0",
+    "@picovoice/web-voice-processor": "^4.0.9",
     "axios": "^1.7.9",
+    "framer-motion": "^12.35.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.3",

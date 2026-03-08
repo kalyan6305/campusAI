@@ -19,6 +19,7 @@ class Settings(BaseSettings):
         env_file=str(Path(__file__).resolve().parents[2] / ".env"),
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore"
     )
 
     # ── App ───────────────────────────────────────────
@@ -38,6 +39,7 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "gemini-1.5-flash"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     GEMINI_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
 
     # ── CORS ──────────────────────────────────────────
     CORS_ORIGINS: str = '["http://localhost:5173"]'

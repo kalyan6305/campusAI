@@ -11,6 +11,11 @@ const useChatStore = create((set, get) => ({
     isStreaming: false,
     ragDocuments: [],
     retrievedChunks: [],
+    researchSources: {
+        browser: [],
+        social: [],
+        platform_links: []
+    },
 
     // ── Session management ────────────────────────────
     loadSessions: async () => {
@@ -94,6 +99,7 @@ const useChatStore = create((set, get) => ({
             messages: [...state.messages, userMsg],
             isStreaming: true,
             streamingContent: '',
+            researchSources: { browser: [], social: [], platform_links: [] }
         }));
 
         await chatAPI.stream(
@@ -101,10 +107,23 @@ const useChatStore = create((set, get) => ({
             content,
             // onToken
             (data) => {
-                const { token } = data;
-                set((state) => ({
-                    streamingContent: state.streamingContent + (token || ''),
-                }));
+                const { token, status, metadata: streamMetadata, mode: streamMode } = data;
+
+                if (status === 'METADATA' && streamMetadata?.sources) {
+                    set((state) => ({
+                        researchSources: {
+                            ...state.researchSources,
+                            [streamMode === 'tools' ? 'browser' : streamMode]: streamMetadata.sources,
+                            platform_links: streamMetadata.platform_links || []
+                        }
+                    }));
+                }
+
+                if (token) {
+                    set((state) => ({
+                        streamingContent: state.streamingContent + token,
+                    }));
+                }
             },
             // onDone
             () => {
@@ -151,6 +170,15 @@ const useChatStore = create((set, get) => ({
         } catch (err) {
             console.error('Failed to search RAG chunks', err);
         }
+    },
+
+    clearActiveSession: () => {
+        set({
+            activeSessionId: null,
+            messages: [],
+            streamingContent: '',
+            researchSources: { browser: [], social: [], platform_links: [] }
+        });
     },
 }));
 
