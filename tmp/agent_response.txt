@@ -1,0 +1,12 @@
+## Section 1 — General Explanation
+**Interference of Light** is a fundamental concept in physics that describes the way in which two or more light waves interact with each other to produce a resultant wave pattern. This phenomenon occurs when light waves from two or more sources overlap in the same medium, resulting in a new wave pattern that can either reinforce or cancel out the original waves. The interference of light can be constructive or destructive, depending on the relative phases of the waves.
+* **Constructive Interference**: occurs when the crests of two waves overlap, resulting in a wave with increased amplitude.
+* **Destructive Interference**: occurs when the crest of one wave overlaps with the trough of another wave, resulting in a wave with decreased amplitude.
+The interference of light is characterized by the formation of **interference fringes**, which are regions of alternating bright and dark bands. This phenomenon is commonly observed in **Young's Double Slit Experiment**, where light passing through two closely spaced slits creates an interference pattern on a screen.
+
+## Section 2 — Regulation Difference
+🔍 Difference
+R23 Regulation
+emphasizes the application of interference in modern optical technologies, such as holography and photonics.
+R20 Regulation
+focuses on the theoretical foundations of interference, including wave theory and experimental verification.

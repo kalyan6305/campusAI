@@ -1,0 +1,37 @@
+import React from 'react';
+import ChatWindow from '../components/chat/ChatWindow';
+import ChatInput from '../components/chat/ChatInput';
+import useChatStore from '../store/chatStore';
+
+const HomePage = () => {
+    const { sendMessage, isStreaming, activeSessionId, createSession } = useChatStore();
+
+    const handleSend = async (content) => {
+        if (!activeSessionId) {
+            await createSession('New Chat');
+        }
+        await sendMessage(content, { mode: 'general' });
+    };
+
+    return (
+        <div className="page-container animate-fade-in flex flex-col h-full overflow-hidden">
+            <header className="mb-6 flex-shrink-0">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">General AI Chat</h1>
+                <p className="mt-2 text-lg text-gray-600 dark:text-gray-400 font-medium">
+                    Ask anything using the Campus AI assistant.
+                </p>
+            </header>
+
+            {/* Chat Container - Standardized Card Style */}
+            <div className="flex-grow bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col relative">
+                <div className="flex-grow overflow-hidden flex flex-col">
+                    <ChatWindow />
+                </div>
+
+                <ChatInput onSend={handleSend} disabled={isStreaming} />
+            </div>
+        </div>
+    );
+};
+
+export default HomePage;

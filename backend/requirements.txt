@@ -1,0 +1,36 @@
+# Campus AI Operating System — Backend Dependencies
+
+# Web Framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+aiomysql==0.2.0
+alembic==1.14.1
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+
+# Config
+pydantic-settings==2.7.1
+email-validator==2.2.0
+python-dotenv==1.0.1
+
+# HTTP Client (for LLM providers)
+httpx==0.28.1
+google-generativeai==0.8.3
+
+# Logging
+python-json-logger==3.2.1
+
+# Rate limiting
+slowapi==0.1.9
+
+# RAG System
+sentence-transformers==3.3.1
+faiss-cpu==1.9.0
+pypdf==5.1.0
