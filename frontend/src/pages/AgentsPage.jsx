@@ -6,7 +6,11 @@ import useChatStore from '../store/chatStore';
 
 const AgentsPage = () => {
     const [selectedAgent, setSelectedAgent] = useState(null);
-    const { sendMessage, isStreaming, activeSessionId, createSession, clearActiveSession } = useChatStore();
+    const { sendMessage, isStreaming, activeSessionId, createSession, clearActiveSession, loadSessions, sessions, selectSession, deleteSession } = useChatStore();
+
+    React.useEffect(() => {
+        loadSessions('agents');
+    }, [loadSessions]);
 
     const agents = [
         { id: 'career', name: 'Career Agent', icon: '💼', description: 'Personalized career advice & profiling.', color: 'blue' },
@@ -22,7 +26,7 @@ const AgentsPage = () => {
     const handleSend = async (content) => {
         if (!activeAgent) return;
         if (!activeSessionId) {
-            await createSession(`Chat with ${activeAgent.name}`);
+            await createSession(`Chat with ${activeAgent.name}`, 'agents');
         }
         await sendMessage(content, { mode: selectedAgent });
     };
@@ -96,13 +100,51 @@ const AgentsPage = () => {
                         </div>
                     </header>
 
-                    {/* Chat Section */}
-                    <div className="flex-grow bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col relative">
-                        <div className="flex-grow overflow-hidden flex flex-col bg-gray-50/20 dark:bg-gray-900/10">
-                            <ChatWindow />
-                        </div>
-                        <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700">
-                            <ChatInput onSend={handleSend} disabled={isStreaming} />
+                    <div className="flex-grow flex gap-6 min-w-0 h-full overflow-hidden">
+                        {/* Agent-Specific History Sidebar */}
+                        <aside className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col">
+                            <div className="p-4 border-b border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
+                                <h2 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Agent History</h2>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+                                {sessions.length === 0 ? (
+                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 italic px-3 py-4 text-center">No agent sessions yet</p>
+                                ) : (
+                                    sessions.map((session) => (
+                                        <div
+                                            key={session.id}
+                                            onClick={() => selectSession(session.id)}
+                                            className={`group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all duration-200 ${session.id === activeSessionId
+                                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800 shadow-sm font-bold'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
+                                                }`}
+                                        >
+                                            <span className="text-[11px] truncate flex-1">{session.title}</span>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deleteSession(session.id);
+                                                }}
+                                                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-all rounded-md hover:bg-white dark:hover:bg-gray-800"
+                                            >
+                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </aside>
+
+                        {/* Chat Section */}
+                        <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col relative">
+                            <div className="flex-grow overflow-hidden flex flex-col bg-gray-50/20 dark:bg-gray-900/10">
+                                <ChatWindow />
+                            </div>
+                            <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700">
+                                <ChatInput onSend={handleSend} disabled={isStreaming} />
+                            </div>
                         </div>
                     </div>
                 </div>

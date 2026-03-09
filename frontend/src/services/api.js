@@ -44,8 +44,8 @@ export const authAPI = {
 
 // ── Sessions ─────────────────────────────────────────
 export const sessionAPI = {
-    list: () => api.get('/sessions'),
-    create: (title = 'New Chat') => api.post('/sessions', { title }),
+    list: (module = null) => api.get('/sessions', { params: { module } }),
+    create: (title = 'New Chat', module = 'chat') => api.post('/sessions', { title, module }),
     getMessages: (id) => api.get(`/sessions/${id}/messages`),
     update: (id, title) => api.patch(`/sessions/${id}`, { title }),
     delete: (id) => api.delete(`/sessions/${id}`),

@@ -9,8 +9,12 @@ import useRagStore from '../store/ragStore';
 
 const CampusPage = () => {
     const [selectedModule, setSelectedModule] = useState('Academics');
-    const { sendMessage, isStreaming, activeSessionId, createSession } = useChatStore();
+    const { sendMessage, isStreaming, activeSessionId, createSession, sessions, loadSessions } = useChatStore();
     const { regulation, branch, year, semester, contentType } = useRagStore();
+
+    React.useEffect(() => {
+        loadSessions('campus');
+    }, [loadSessions]);
 
     const handleSend = async (content) => {
         const metadata = {
@@ -27,7 +31,7 @@ const CampusPage = () => {
         }
 
         if (!activeSessionId) {
-            await createSession(`Campus AI - ${selectedModule}`);
+            await createSession(`Campus AI - ${selectedModule}`, 'campus');
         }
         await sendMessage(content, metadata);
     };
@@ -42,6 +46,10 @@ const CampusPage = () => {
             <CampusSidebar
                 selectedModule={selectedModule}
                 onModuleSelect={setSelectedModule}
+                sessions={sessions}
+                activeSessionId={activeSessionId}
+                onSelectSession={selectSession}
+                onDeleteSession={deleteSession}
             />
 
             {/* Main Chat Area */}

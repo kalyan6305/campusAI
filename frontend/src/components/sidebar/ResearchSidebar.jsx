@@ -27,7 +27,7 @@ const CATEGORY_BADGE = { Development: 'bg-blue-50 text-blue-700', Scholarly: 'bg
 
 // ── Component ────────────────────────────────────────────────────
 // ── Component ────────────────────────────────────────────────────
-export default function ResearchSidebar({ results, isStreaming, activeTool, setActiveTool }) {
+export default function ResearchSidebar({ results, isStreaming, activeTool, setActiveTool, sessions = [], activeSessionId, onSelectSession, onDeleteSession }) {
 
     const allPlatforms = results?.platform_links || [];
     const sources = results?.browser || [];
@@ -187,6 +187,48 @@ export default function ResearchSidebar({ results, isStreaming, activeTool, setA
                         </p>
                     </div>
                 ) : null}
+
+                {/* ── Tools History ───────────────────────────── */}
+                <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-4">
+                    <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 tracking-[0.18em] uppercase pb-2 px-1">Research History</p>
+                    <div className="space-y-1">
+                        {sessions.length === 0 ? (
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 italic px-2 py-3 text-center">
+                                No previous research sessions
+                            </p>
+                        ) : (
+                            sessions.map((session) => (
+                                <div
+                                    key={session.id}
+                                    onClick={() => onSelectSession?.(session.id)}
+                                    className={`group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all duration-200 ${session.id === activeSessionId
+                                        ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700'
+                                        : 'border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        <span className="text-[10px] flex-shrink-0">🔍</span>
+                                        <span className="text-[10px] text-gray-700 dark:text-gray-300 truncate font-medium">
+                                            {session.title}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDeleteSession?.(session.id);
+                                        }}
+                                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-0.5"
+                                        title="Delete session"
+                                    >
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* ── Footer ───────────────────────────────────── */}

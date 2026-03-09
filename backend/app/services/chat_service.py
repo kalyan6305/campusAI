@@ -17,7 +17,7 @@ from app.models.message import Message
 from app.models.session import ChatSession
 from app.utils.exceptions import LLMError, NotFoundError
 from app.services import rag_document_service
-from app.rag.rag_service import query_knowledge_by_regulation
+from app.rag import rag_service
 from app.agents.research_agent import ResearchAgent
 from app.agents.career_agent import CareerAgent
 from app.agents.academic_agent import AcademicAgent
@@ -83,7 +83,7 @@ async def process_chat(
     messages = _build_llm_messages(session)
 
     # RAG framework check (already present)
-    rag_context = await query_knowledge_by_regulation(user_message)
+    rag_context = await rag_service.query_knowledge_by_regulation(user_message)
     context_str = ""
     if rag_context:
         for reg, chunks in rag_context.items():
@@ -165,7 +165,7 @@ async def process_chat_stream(
         yield {"mode": mode, "status": "METADATA", "metadata": {"sources": search_results, "platform_links": platform_links}}
 
     # --- RAG Injection ---
-    rag_context = await query_knowledge_by_regulation(user_message)
+    rag_context = await rag_service.query_knowledge_by_regulation(user_message)
     context_str = ""
     if rag_context:
         for reg, chunks in rag_context.items():
