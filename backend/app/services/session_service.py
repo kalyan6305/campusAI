@@ -21,9 +21,10 @@ async def create_session(
     user_id: int,
     title: str,
     db: AsyncSession,
+    module: str = "chat",
 ) -> ChatSession:
     """Create a new chat session for a user."""
-    session = ChatSession(user_id=user_id, title=title)
+    session = ChatSession(user_id=user_id, title=title, module=module)
     db.add(session)
     await db.flush()
     await db.refresh(session)
@@ -34,13 +35,14 @@ async def create_session(
 async def list_sessions(
     user_id: int,
     db: AsyncSession,
+    module: str | None = None,
 ) -> list[ChatSession]:
-    """Return all sessions for a user, newest first."""
-    result = await db.execute(
-        select(ChatSession)
-        .where(ChatSession.user_id == user_id)
-        .order_by(ChatSession.created_at.desc())
-    )
+    """Return all sessions for a user, newest first. Optional module filter."""
+    query = select(ChatSession).where(ChatSession.user_id == user_id)
+    if module:
+        query = query.where(ChatSession.module == module)
+    
+    result = await db.execute(query.order_by(ChatSession.created_at.desc()))
     return list(result.scalars().all())
 
 

@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 class SessionCreate(BaseModel):
     title: str = Field(default="New Chat", max_length=255)
+    module: str = Field(default="chat", max_length=50)
 
 
 class SessionUpdate(BaseModel):

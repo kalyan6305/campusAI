@@ -30,18 +30,19 @@ async def create_session(
 ):
     """Create a new chat session."""
     session = await session_service.create_session(
-        user_id=current_user.id, title=body.title, db=db
+        user_id=current_user.id, title=body.title, module=body.module, db=db
     )
     return session
 
 
 @router.get("", response_model=SessionListResponse)
 async def list_sessions(
+    module: str | None = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """List all sessions for the current user."""
-    sessions = await session_service.list_sessions(current_user.id, db)
+    """List all sessions for the current user. Optional module filter."""
+    sessions = await session_service.list_sessions(current_user.id, db, module=module)
     return SessionListResponse(sessions=sessions)
 
 

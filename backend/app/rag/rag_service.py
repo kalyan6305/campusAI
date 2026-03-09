@@ -146,3 +146,8 @@ async def get_all_documents(folder_path: str = "data/documents"):
     """Wrapper for external calls."""
     service = RAGService()
     return await service.get_all_documents(folder_path)
+
+async def search_document_chunks(query: str, k: int = 5):
+    """Wrapper for external calls."""
+    service = RAGService()
+    return await service.search_document_chunks(query, k)

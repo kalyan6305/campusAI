@@ -3,7 +3,7 @@
  * Completely independent from chatStore.
  */
 import { create } from 'zustand';
-import { voiceAPI } from '../services/api';
+import { voiceAPI, sessionAPI } from '../services/api';
 
 const useVoiceStore = create((set, get) => ({
     voiceSessions: [],
@@ -15,15 +15,15 @@ const useVoiceStore = create((set, get) => ({
     // ── Session management ────────────────────────────
     loadVoiceSessions: async () => {
         try {
-            const { data } = await voiceAPI.listSessions();
+            const { data } = await sessionAPI.list('voice');
             set({ voiceSessions: data.sessions });
         } catch (err) {
-            console.error('Failed to load voice sessions', err);
+            console.error('[voiceStore] Failed to load voice sessions:', err);
         }
     },
 
     createVoiceSession: async (title) => {
-        const { data } = await voiceAPI.createSession(title);
+        const { data } = await sessionAPI.create(title, 'voice');
         set((state) => ({
             voiceSessions: [data, ...state.voiceSessions],
             activeVoiceSessionId: data.id,
@@ -35,7 +35,7 @@ const useVoiceStore = create((set, get) => ({
     selectVoiceSession: async (id) => {
         set({ activeVoiceSessionId: id, voiceMessages: [], streamingContent: '' });
         try {
-            const { data } = await voiceAPI.getMessages(id);
+            const { data } = await sessionAPI.getMessages(id);
             set({ voiceMessages: data });
         } catch (err) {
             console.error('Failed to load voice messages', err);
@@ -43,7 +43,7 @@ const useVoiceStore = create((set, get) => ({
     },
 
     deleteVoiceSession: async (id) => {
-        await voiceAPI.deleteSession(id);
+        await sessionAPI.delete(id);
         set((state) => {
             const voiceSessions = state.voiceSessions.filter((s) => s.id !== id);
             const activeVoiceSessionId =

@@ -7,6 +7,7 @@ import { sessionAPI, chatAPI, ragAPI } from '../services/api';
 const useChatStore = create((set, get) => ({
     sessions: [],
     activeSessionId: null,
+    currentModule: 'chat', // Track the module for the active view
     messages: [],
     isStreaming: false,
     ragDocuments: [],
@@ -18,22 +19,25 @@ const useChatStore = create((set, get) => ({
     },
 
     // ── Session management ────────────────────────────
-    loadSessions: async () => {
+    loadSessions: async (module = 'chat') => {
         try {
-            const { data } = await sessionAPI.list();
+            set({ currentModule: module });
+            const { data } = await sessionAPI.list(module);
             set({ sessions: data.sessions });
         } catch (err) {
-            console.error('Failed to load sessions', err);
+            console.error(`Failed to load ${module} sessions`, err);
         }
     },
 
-    createSession: async (title) => {
-        const { data } = await sessionAPI.create(title);
+    createSession: async (title, module = 'chat') => {
+        const { data } = await sessionAPI.create(title, module);
         set((state) => ({
             sessions: [data, ...state.sessions],
             activeSessionId: data.id,
+            currentModule: module,
             messages: [],
         }));
+        set({ researchSources: { browser: [], social: [], platform_links: [] } });
         return data.id;
     },
 
@@ -136,7 +140,8 @@ const useChatStore = create((set, get) => ({
                     streamingContent: '',
                 }));
                 // Refresh session list (title may have changed)
-                get().loadSessions();
+                const { currentModule, loadSessions } = get();
+                loadSessions(currentModule);
             },
             // onError
             (error) => {
