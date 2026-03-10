@@ -1,5 +1,5 @@
 """
-Message ORM model.
+ToolsMessage ORM model.
 """
 
 from __future__ import annotations
@@ -12,17 +12,17 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 
-class ChatMessage(Base):
-    __tablename__ = "chat_messages"
+class ToolsMessage(Base):
+    __tablename__ = "tools_messages"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     session_id: Mapped[int] = mapped_column(
-        ForeignKey("chat_sessions.id", ondelete="CASCADE"),
+        ForeignKey("tools_sessions.id", ondelete="CASCADE"),
         index=True,
         nullable=False,
     )
     role: Mapped[str] = mapped_column(
-        Enum("user", "assistant", "system", name="message_role"),
+        Enum("user", "assistant", "system", name="tools_message_role"),
         nullable=False,
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -32,7 +32,7 @@ class ChatMessage(Base):
     )
 
     # Relationships
-    session = relationship("ChatSession", back_populates="messages")
+    session = relationship("ToolsSession", back_populates="messages")
 
     def __repr__(self) -> str:
-        return f"<ChatMessage id={self.id} role={self.role}>"
+        return f"<ToolsMessage id={self.id} role={self.role}>"

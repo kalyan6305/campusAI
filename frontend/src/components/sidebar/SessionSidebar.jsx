@@ -7,7 +7,8 @@ import useChatStore from '../../store/chatStore';
 import useAuthStore from '../../store/authStore';
 
 export default function SessionSidebar() {
-    const { sessions, activeSessionId, loadSessions, createSession, selectSession, deleteSession, renameSession } = useChatStore();
+    const { getSessions, activeSessionId, loadSessions, createSession, selectSession, deleteSession, renameSession } = useChatStore();
+    const sessions = getSessions();
     const { user, logout } = useAuthStore();
     const navigate = useNavigate();
 

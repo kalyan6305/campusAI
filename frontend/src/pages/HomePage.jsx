@@ -4,13 +4,30 @@ import ChatInput from '../components/chat/ChatInput';
 import useChatStore from '../store/chatStore';
 
 const HomePage = () => {
-    const { sendMessage, isStreaming, activeSessionId, createSession } = useChatStore();
+    const {
+        sendMessage,
+        isStreaming,
+        activeSessionId,
+        createSession,
+        loadSessions,
+        clearActiveSession
+    } = useChatStore();
+
+    React.useEffect(() => {
+        // Set module and load sessions on mount
+        loadSessions('chat');
+
+        return () => {
+            // Clear state on unmount
+            clearActiveSession();
+        };
+    }, [loadSessions, clearActiveSession]);
 
     const handleSend = async (content) => {
         if (!activeSessionId) {
-            await createSession('New Chat');
+            await createSession('New Chat', 'chat');
         }
-        await sendMessage(content, { mode: 'general' });
+        await sendMessage(content, { mode: 'general', module: 'chat' });
     };
 
     return (

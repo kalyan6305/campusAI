@@ -9,12 +9,24 @@ import useRagStore from '../store/ragStore';
 
 const CampusPage = () => {
     const [selectedModule, setSelectedModule] = useState('Academics');
-    const { sendMessage, isStreaming, activeSessionId, createSession, sessions, loadSessions } = useChatStore();
+    const {
+        sendMessage,
+        isStreaming,
+        activeSessionId,
+        createSession,
+        getSessions,
+        loadSessions,
+        selectSession,
+        deleteSession,
+        clearActiveSession
+    } = useChatStore();
+    const sessions = getSessions();
     const { regulation, branch, year, semester, contentType } = useRagStore();
 
     React.useEffect(() => {
         loadSessions('campus');
-    }, [loadSessions]);
+        return () => clearActiveSession();
+    }, [loadSessions, clearActiveSession]);
 
     const handleSend = async (content) => {
         const metadata = {

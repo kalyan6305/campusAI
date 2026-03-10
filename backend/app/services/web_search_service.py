@@ -46,13 +46,15 @@ class WebSearchService:
         general_query = query
 
         logger.info("Launching 3 parallel searches for: %s", query)
-
-        dev_results, scholarly_results, general_results = await asyncio.gather(
+        
+        # Use sync DDGS in a way that avoids hangs
+        results = await asyncio.gather(
             self._run_search(dev_query, bucket="Development"),
             self._run_search(scholarly_query, bucket="Scholarly"),
             self._run_search(general_query, bucket="Web"),
-            return_exceptions=True,
+            return_exceptions=True
         )
+        dev_results, scholarly_results, general_results = results
 
         combined = []
         seen_urls = set()
@@ -79,9 +81,19 @@ class WebSearchService:
     # ──────────────────────────────────────────────────────────────────
 
     async def _run_search(self, query: str, bucket: str) -> List[Dict[str, Any]]:
-        """Run a single DuckDuckGo text search in a thread pool (DDGS is sync)."""
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self._sync_search, query, bucket)
+        """Run a single DuckDuckGo text search in a thread pool."""
+        loop = asyncio.get_running_loop()
+        try:
+            return await asyncio.wait_for(
+                loop.run_in_executor(None, self._sync_search, query, bucket),
+                timeout=10.0
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Search timeout for bucket %s", bucket)
+            return []
+        except Exception as exc:
+            logger.error("Search execution failed for bucket %s: %s", bucket, exc)
+            return []
 
     def _sync_search(self, query: str, bucket: str) -> List[Dict[str, Any]]:
         results = []
@@ -98,7 +110,7 @@ class WebSearchService:
                         "category": bucket,
                     })
         except Exception as exc:
-            logger.error("DDGS error for bucket %s: %s", bucket, exc)
+            logger.error("DDGS sync error for bucket %s: %s", bucket, exc)
         return results
 
     def _generate_platform_links(self, query: str) -> List[Dict[str, str]]:

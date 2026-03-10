@@ -3,7 +3,8 @@ import useChatStore from '../../store/chatStore';
 import MessageBubble from './MessageBubble';
 
 export default function ChatWindow() {
-    const { messages, isStreaming, streamingContent, activeSessionId } = useChatStore();
+    const { getMessages, isStreaming, streamingContent, activeSessionId } = useChatStore();
+    const messages = getMessages();
     const bottomRef = useRef(null);
 
     useEffect(() => {

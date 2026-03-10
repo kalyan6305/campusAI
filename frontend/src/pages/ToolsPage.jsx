@@ -5,19 +5,32 @@ import ResearchSidebar from '../components/sidebar/ResearchSidebar';
 import useChatStore from '../store/chatStore';
 
 const ToolsPage = () => {
-    const { sendMessage, isStreaming, activeSessionId, createSession, researchSources, loadSessions, sessions, selectSession, deleteSession } = useChatStore();
+    const {
+        sendMessage,
+        isStreaming,
+        activeSessionId,
+        createSession,
+        researchSources,
+        loadSessions,
+        getSessions,
+        selectSession,
+        deleteSession,
+        clearActiveSession
+    } = useChatStore();
+    const sessions = getSessions();
     const [activeTool, setActiveTool] = useState('browser');
 
     React.useEffect(() => {
         loadSessions('tools');
-    }, [loadSessions]);
+        return () => clearActiveSession();
+    }, [loadSessions, clearActiveSession]);
 
     const handleSend = async (content) => {
         if (!activeSessionId) {
             await createSession('Research Session', 'tools');
         }
 
-        await sendMessage(content, { mode: 'tools' });
+        await sendMessage(content, { mode: 'tools', module: 'tools' });
     };
 
     return (

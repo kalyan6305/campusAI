@@ -5,11 +5,17 @@ import { create } from 'zustand';
 import { sessionAPI, chatAPI, ragAPI } from '../services/api';
 
 const useChatStore = create((set, get) => ({
-    sessions: [],
+    sessionsByModule: {
+        chat: [],
+        campus: [],
+        tools: [],
+        agents: [],
+    },
     activeSessionId: null,
-    currentModule: 'chat', // Track the module for the active view
-    messages: [],
+    messagesBySession: {}, // session_id -> messages[]
     isStreaming: false,
+    streamingContent: '',
+    currentModule: 'chat', // Track the module for the active view
     ragDocuments: [],
     retrievedChunks: [],
     researchSources: {
@@ -18,54 +24,104 @@ const useChatStore = create((set, get) => ({
         platform_links: []
     },
 
+    // ── Computed ──────────────────────────────────────
+    // Helper to get sessions for current module
+    getSessions: () => {
+        const { sessionsByModule, currentModule } = get();
+        return sessionsByModule[currentModule] || [];
+    },
+
+    // Helper to get messages for active session
+    getMessages: () => {
+        const { messagesBySession, activeSessionId } = get();
+        return activeSessionId ? (messagesBySession[activeSessionId] || []) : [];
+    },
+
     // ── Session management ────────────────────────────
     loadSessions: async (module = 'chat') => {
         try {
             set({ currentModule: module });
             const { data } = await sessionAPI.list(module);
-            set({ sessions: data.sessions });
+            set((state) => ({
+                sessionsByModule: {
+                    ...state.sessionsByModule,
+                    [module]: data.sessions,
+                }
+            }));
         } catch (err) {
             console.error(`Failed to load ${module} sessions`, err);
         }
     },
 
-    createSession: async (title, module = 'chat') => {
-        const { data } = await sessionAPI.create(title, module);
-        set((state) => ({
-            sessions: [data, ...state.sessions],
-            activeSessionId: data.id,
-            currentModule: module,
-            messages: [],
-        }));
-        set({ researchSources: { browser: [], social: [], platform_links: [] } });
-        return data.id;
+    createSession: async (title = 'New Chat', module = 'chat') => {
+        try {
+            const { data: session } = await sessionAPI.create(title, module);
+            set((state) => ({
+                sessionsByModule: {
+                    ...state.sessionsByModule,
+                    [module]: [session, ...(state.sessionsByModule[module] || [])],
+                },
+                activeSessionId: session.id,
+                messagesBySession: {
+                    ...state.messagesBySession,
+                    [session.id]: [],
+                },
+            }));
+            return session;
+        } catch (err) {
+            console.error('Failed to create session', err);
+        }
     },
 
-    selectSession: async (id) => {
-        set({ activeSessionId: id, messages: [], streamingContent: '' });
+    selectSession: async (sessionId) => {
+        const { currentModule } = get();
+        set({ activeSessionId: sessionId, streamingContent: '' });
+        if (!sessionId) return;
+
         try {
-            const { data } = await sessionAPI.getMessages(id);
-            set({ messages: data });
+            const { data: messages } = await sessionAPI.getMessages(sessionId, currentModule);
+            set((state) => ({
+                messagesBySession: {
+                    ...state.messagesBySession,
+                    [sessionId]: messages,
+                },
+            }));
         } catch (err) {
             console.error('Failed to load messages', err);
         }
     },
 
-    deleteSession: async (id) => {
-        await sessionAPI.delete(id);
-        set((state) => {
-            const sessions = state.sessions.filter((s) => s.id !== id);
-            const activeSessionId =
-                state.activeSessionId === id ? null : state.activeSessionId;
-            return { sessions, activeSessionId, messages: activeSessionId ? state.messages : [] };
-        });
+    deleteSession: async (sessionId) => {
+        try {
+            const { currentModule, sessionsByModule } = get();
+            await sessionAPI.delete(sessionId, currentModule);
+            const updatedSessions = sessionsByModule[currentModule].filter(s => s.id !== sessionId);
+
+            set((state) => ({
+                sessionsByModule: {
+                    ...state.sessionsByModule,
+                    [currentModule]: updatedSessions,
+                },
+                activeSessionId: state.activeSessionId === sessionId ? null : state.activeSessionId,
+            }));
+        } catch (err) {
+            console.error('Failed to delete session', err);
+        }
     },
 
     renameSession: async (id, title) => {
         try {
-            const { data } = await sessionAPI.update(id, title);
+            const { currentModule, sessionsByModule } = get();
+            const { data } = await sessionAPI.update(id, title, currentModule);
+            const updatedSessions = sessionsByModule[currentModule].map((s) =>
+                s.id === id ? { ...s, title: data.title } : s
+            );
+
             set((state) => ({
-                sessions: state.sessions.map((s) => (s.id === id ? { ...s, title: data.title } : s)),
+                sessionsByModule: {
+                    ...state.sessionsByModule,
+                    [currentModule]: updatedSessions,
+                },
             }));
         } catch (err) {
             console.error('Failed to rename session', err);
@@ -73,16 +129,20 @@ const useChatStore = create((set, get) => ({
     },
 
     editAndResend: async (index, content) => {
-        const { activeSessionId, sendMessage } = get();
+        const { activeSessionId, sendMessage, getMessages, currentModule } = get();
         if (!activeSessionId) return;
 
         try {
             // 1. Truncate backend
-            await sessionAPI.truncate(activeSessionId, index);
+            await sessionAPI.truncate(activeSessionId, index, currentModule);
 
             // 2. Clear local messages from index onwards
+            const currentMessages = getMessages();
             set((state) => ({
-                messages: state.messages.slice(0, index),
+                messagesBySession: {
+                    ...state.messagesBySession,
+                    [activeSessionId]: currentMessages.slice(0, index),
+                },
             }));
 
             // 3. Resend the edited message
@@ -94,13 +154,18 @@ const useChatStore = create((set, get) => ({
 
     // ── Chat ──────────────────────────────────────────
     sendMessage: async (content, metadata = {}) => {
-        const { activeSessionId } = get();
+        const { activeSessionId, getMessages } = get();
         if (!activeSessionId) return;
 
         // Optimistic: add user message
         const userMsg = { role: 'user', content };
+        const currentMessages = getMessages();
+
         set((state) => ({
-            messages: [...state.messages, userMsg],
+            messagesBySession: {
+                ...state.messagesBySession,
+                [activeSessionId]: [...currentMessages, userMsg],
+            },
             isStreaming: true,
             streamingContent: '',
             researchSources: { browser: [], social: [], platform_links: [] }
@@ -131,11 +196,16 @@ const useChatStore = create((set, get) => ({
             },
             // onDone
             () => {
+                const { streamingContent, getMessages } = get();
+                const updatedMessages = [
+                    ...getMessages(),
+                    { role: 'assistant', content: streamingContent },
+                ];
                 set((state) => ({
-                    messages: [
-                        ...state.messages,
-                        { role: 'assistant', content: state.streamingContent },
-                    ],
+                    messagesBySession: {
+                        ...state.messagesBySession,
+                        [activeSessionId]: updatedMessages,
+                    },
                     isStreaming: false,
                     streamingContent: '',
                 }));
@@ -145,11 +215,16 @@ const useChatStore = create((set, get) => ({
             },
             // onError
             (error) => {
+                const { getMessages } = get();
+                const updatedMessages = [
+                    ...getMessages(),
+                    { role: 'assistant', content: `⚠️ Error: ${error}` },
+                ];
                 set((state) => ({
-                    messages: [
-                        ...state.messages,
-                        { role: 'assistant', content: `⚠️ Error: ${error}` },
-                    ],
+                    messagesBySession: {
+                        ...state.messagesBySession,
+                        [activeSessionId]: updatedMessages,
+                    },
                     isStreaming: false,
                     streamingContent: '',
                 }));
@@ -180,7 +255,6 @@ const useChatStore = create((set, get) => ({
     clearActiveSession: () => {
         set({
             activeSessionId: null,
-            messages: [],
             streamingContent: '',
             researchSources: { browser: [], social: [], platform_links: [] }
         });

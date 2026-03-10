@@ -5,7 +5,7 @@ import Navbar from './Navbar';
 
 const ProtectedLayout = ({ children }) => {
     const location = useLocation();
-    const hideGlobalSidebar = ['/campus', '/tools', '/agents', '/voice'].includes(location.pathname);
+    const hideGlobalSidebar = ['/campus', '/tools', '/agents', '/voice', '/profile'].includes(location.pathname);
 
     return (
         <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden font-sans">

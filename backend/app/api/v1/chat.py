@@ -33,6 +33,7 @@ async def send_message(
         user_message=body.message,
         user_id=current_user.id,
         db=db,
+        metadata=body.metadata,
     )
     return ChatResponse(
         session_id=body.session_id,

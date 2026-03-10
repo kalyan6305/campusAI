@@ -1,5 +1,5 @@
 """
-Auth API endpoints — register, login, current user.
+Auth API endpoints — register, login, current user, stats, and password resets.
 """
 
 from __future__ import annotations
@@ -14,8 +14,10 @@ from app.schemas.auth import (
     RegisterRequest,
     TokenResponse,
     UserResponse,
+    PasswordResetRequest,
+    PasswordResetConfirm,
 )
-from app.services import auth_service
+from app.services import auth_service, email_service
 from app.utils.dependencies import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -39,3 +41,37 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
 async def me(current_user: User = Depends(get_current_user)):
     """Return the currently authenticated user."""
     return current_user
+
+
+@router.get("/stats")
+async def get_stats(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Return usage statistics for the current user."""
+    stats = await auth_service.get_user_stats(current_user.id, db)
+    return stats
+
+
+@router.post("/password-reset-request")
+async def request_password_reset(
+    body: PasswordResetRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Generate a token and send a reset email."""
+    token = await auth_service.create_password_reset_token(body.email, db)
+    if token:
+        await email_service.send_password_reset_email(body.email, token)
+        
+    # Return success even if email not found for security (obscure user existence)
+    return {"message": "If this email is registered, a reset link has been sent."}
+
+
+@router.post("/password-reset-confirm")
+async def confirm_password_reset(
+    body: PasswordResetConfirm,
+    db: AsyncSession = Depends(get_db)
+):
+    """Validate token and update password."""
+    await auth_service.update_password_with_token(body.token, body.new_password, db)
+    return {"message": "Password updated successfully."}

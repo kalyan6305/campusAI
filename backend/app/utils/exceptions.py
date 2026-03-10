@@ -33,6 +33,11 @@ class ConflictError(AppException):
         super().__init__(status_code=409, detail=detail)
 
 
+class ForbiddenError(AppException):
+    def __init__(self, detail: str = "Access denied"):
+        super().__init__(status_code=403, detail=detail)
+
+
 class LLMError(AppException):
     def __init__(self, detail: str = "LLM service unavailable"):
         super().__init__(status_code=502, detail=detail)

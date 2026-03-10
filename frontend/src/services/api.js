@@ -40,16 +40,19 @@ export const authAPI = {
         api.post('/auth/login', { email, password }),
 
     me: () => api.get('/auth/me'),
+    getStats: () => api.get('/auth/stats'),
+    requestPasswordReset: (email) => api.post('/auth/password-reset-request', { email }),
+    confirmPasswordReset: (token, newPassword) => api.post('/auth/password-reset-confirm', { token, new_password: newPassword }),
 };
 
 // ── Sessions ─────────────────────────────────────────
 export const sessionAPI = {
     list: (module = null) => api.get('/sessions', { params: { module } }),
     create: (title = 'New Chat', module = 'chat') => api.post('/sessions', { title, module }),
-    getMessages: (id) => api.get(`/sessions/${id}/messages`),
-    update: (id, title) => api.patch(`/sessions/${id}`, { title }),
-    delete: (id) => api.delete(`/sessions/${id}`),
-    truncate: (id, index) => api.delete(`/sessions/${id}/truncate/${index}`),
+    getMessages: (id, module = 'chat') => api.get(`/sessions/${id}/messages`, { params: { module } }),
+    update: (id, title, module = 'chat') => api.patch(`/sessions/${id}`, { title }, { params: { module } }),
+    delete: (id, module = 'chat') => api.delete(`/sessions/${id}`, { params: { module } }),
+    truncate: (id, index, module = 'chat') => api.delete(`/sessions/${id}/truncate/${index}`, { params: { module } }),
 };
 
 // ── Chat ─────────────────────────────────────────────

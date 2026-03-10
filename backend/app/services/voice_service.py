@@ -12,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.llm.factory import get_llm_provider
-from app.models.message import Message
-from app.models.session import ChatSession
+from app.models.voice_message import VoiceMessage
+from app.models.voice_session import VoiceSession
 from app.utils.exceptions import LLMError, NotFoundError
 from app.rag import rag_service
 from app.agents.research_agent import ResearchAgent
@@ -28,31 +28,44 @@ async def create_voice_session(
     user_id: int,
     title: str,
     db: AsyncSession,
-) -> ChatSession:
+) -> VoiceSession:
     """Create a new voice session for a user."""
-    from app.services import session_service
-    return await session_service.create_session(
-        user_id=user_id, title=title, db=db, module="voice"
-    )
+    session = VoiceSession(user_id=user_id, title=title)
+    db.add(session)
+    await db.flush()
+    await db.refresh(session)
+    logger.info("Created voice session id=%d for user=%d", session.id, user_id)
+    return session
 
 
 async def list_voice_sessions(
     user_id: int,
     db: AsyncSession,
-) -> list[ChatSession]:
+) -> list[VoiceSession]:
     """Return all voice sessions for a user, newest first."""
-    from app.services import session_service
-    return await session_service.list_sessions(user_id, db, module="voice")
+    result = await db.execute(
+        select(VoiceSession)
+        .where(VoiceSession.user_id == user_id)
+        .order_by(VoiceSession.created_at.desc())
+    )
+    return list(result.scalars().all())
 
 
 async def get_voice_session_messages(
     session_id: int,
     user_id: int,
     db: AsyncSession,
-) -> list[Message]:
+) -> list[VoiceMessage]:
     """Return all messages for a voice session (with ownership check)."""
-    from app.services import session_service
-    return await session_service.get_session_messages(session_id, user_id, db)
+    result = await db.execute(
+        select(VoiceSession)
+        .options(selectinload(VoiceSession.messages))
+        .where(VoiceSession.id == session_id, VoiceSession.user_id == user_id)
+    )
+    session = result.scalar_one_or_none()
+    if session is None:
+        raise NotFoundError("Voice session not found")
+    return list(session.messages)
 
 
 async def delete_voice_session(
@@ -61,8 +74,15 @@ async def delete_voice_session(
     db: AsyncSession,
 ) -> None:
     """Delete a voice session (cascades to messages)."""
-    from app.services import session_service
-    await session_service.delete_session(session_id, user_id, db)
+    result = await db.execute(
+        select(VoiceSession)
+        .where(VoiceSession.id == session_id, VoiceSession.user_id == user_id)
+    )
+    session = result.scalar_one_or_none()
+    if session is None:
+        raise NotFoundError("Voice session not found")
+    await db.delete(session)
+    logger.info("Deleted voice session id=%d for user=%d", session_id, user_id)
 
 
 # ── Voice Chat Streaming ─────────────────────────────
@@ -72,12 +92,12 @@ async def _get_voice_session_with_messages(
     session_id: int,
     user_id: int,
     db: AsyncSession,
-) -> ChatSession:
+) -> VoiceSession:
     """Fetch voice session with messages, verify ownership."""
     result = await db.execute(
-        select(ChatSession)
-        .options(selectinload(ChatSession.messages))
-        .where(ChatSession.id == session_id, ChatSession.user_id == user_id)
+        select(VoiceSession)
+        .options(selectinload(VoiceSession.messages))
+        .where(VoiceSession.id == session_id, VoiceSession.user_id == user_id)
     )
     session = result.scalar_one_or_none()
     if session is None:
@@ -85,7 +105,7 @@ async def _get_voice_session_with_messages(
     return session
 
 
-def _build_llm_messages(session: ChatSession) -> list[dict]:
+def _build_llm_messages(session: VoiceSession) -> list[dict]:
     """Convert ORM messages to the list[dict] format LLM providers expect."""
     return [
         {"role": msg.role, "content": msg.content}
@@ -107,20 +127,14 @@ async def process_voice_chat_stream(
     3. Save assistant message after stream completes
     """
     session = await _get_voice_session_with_messages(session_id, user_id, db)
-    
-    # Ensure this is actually a voice session
-    if session.module != "voice":
-        raise NotFoundError("Voice session not found")
 
-    user_msg = Message(
+    user_msg = VoiceMessage(
         session_id=session_id,
         role="user",
         content=user_message,
     )
     db.add(user_msg)
     await db.flush()
-    # messages relationship uses Message.timestamp for sorting
-    # Since we just added it, we may need to refresh or just append
     session.messages.append(user_msg)
 
     mode = metadata.get("mode", "voice") if metadata else "voice"
@@ -146,7 +160,7 @@ async def process_voice_chat_stream(
 
     # Persist assistant reply
     reply_text = "".join(full_reply)
-    assistant_msg = Message(
+    assistant_msg = VoiceMessage(
         session_id=session_id,
         role="assistant",
         content=reply_text,

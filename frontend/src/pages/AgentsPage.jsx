@@ -6,11 +6,13 @@ import useChatStore from '../store/chatStore';
 
 const AgentsPage = () => {
     const [selectedAgent, setSelectedAgent] = useState(null);
-    const { sendMessage, isStreaming, activeSessionId, createSession, clearActiveSession, loadSessions, sessions, selectSession, deleteSession } = useChatStore();
+    const { sendMessage, isStreaming, activeSessionId, createSession, clearActiveSession, loadSessions, getSessions, selectSession, deleteSession } = useChatStore();
+    const sessions = getSessions();
 
     React.useEffect(() => {
         loadSessions('agents');
-    }, [loadSessions]);
+        return () => clearActiveSession();
+    }, [loadSessions, clearActiveSession]);
 
     const agents = [
         { id: 'career', name: 'Career Agent', icon: '💼', description: 'Personalized career advice & profiling.', color: 'blue' },
@@ -28,7 +30,7 @@ const AgentsPage = () => {
         if (!activeSessionId) {
             await createSession(`Chat with ${activeAgent.name}`, 'agents');
         }
-        await sendMessage(content, { mode: selectedAgent });
+        await sendMessage(content, { mode: selectedAgent, module: 'agents' });
     };
 
     const handleSelectAgent = (agentId) => {
@@ -115,8 +117,8 @@ const AgentsPage = () => {
                                             key={session.id}
                                             onClick={() => selectSession(session.id)}
                                             className={`group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all duration-200 ${session.id === activeSessionId
-                                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800 shadow-sm font-bold'
-                                                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
+                                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800 shadow-sm font-bold'
+                                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                                                 }`}
                                         >
                                             <span className="text-[11px] truncate flex-1">{session.title}</span>

@@ -49,12 +49,13 @@ async def list_sessions(
 @router.get("/{session_id}/messages", response_model=list[MessageSchema])
 async def get_messages(
     session_id: int,
+    module: str = "chat",
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get all messages for a session."""
+    """Get all messages for a session from the specified module's table."""
     messages = await session_service.get_session_messages(
-        session_id, current_user.id, db
+        session_id, current_user.id, db, module=module
     )
     return [
         MessageSchema(role=m.role, content=m.content)
@@ -65,23 +66,25 @@ async def get_messages(
 @router.delete("/{session_id}", status_code=204)
 async def delete_session(
     session_id: int,
+    module: str = "chat",
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Delete a session and all its messages."""
-    await session_service.delete_session(session_id, current_user.id, db)
+    """Delete a session from the specified module's table."""
+    await session_service.delete_session(session_id, current_user.id, db, module=module)
 
 
 @router.patch("/{session_id}", response_model=SessionResponse)
 async def rename_session(
     session_id: int,
     body: SessionUpdate,
+    module: str = "chat",
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Rename an existing chat session."""
+    """Rename an existing session in the specified module's table."""
     session = await session_service.update_session(
-        session_id=session_id, user_id=current_user.id, title=body.title, db=db
+        session_id=session_id, user_id=current_user.id, title=body.title, db=db, module=module
     )
     return session
 
@@ -90,11 +93,12 @@ async def rename_session(
 async def truncate_session(
     session_id: int,
     index: int,
+    module: str = "chat",
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Truncate a session's history from a specific index."""
+    """Truncate a session's history from the specified module's table."""
     await session_service.truncate_session(
-        session_id=session_id, user_id=current_user.id, message_index=index, db=db
+        session_id=session_id, user_id=current_user.id, message_index=index, db=db, module=module
     )
 
