@@ -15,7 +15,7 @@ async def send_password_reset_email(email: str, token: str):
     Simulates sending an email by logging it to the console and a preview file.
     In a real app, this would use SMTP or an API (SendGrid, Mailgun, etc.)
     """
-    reset_link = f"http://localhost:5173/auth/reset-password?token={token}"
+    reset_link = f"http://localhost:5173/reset-password?token={token}"
     
     subject = "Campus AI - Password Reset Request"
     body = f"""
@@ -26,7 +26,7 @@ async def send_password_reset_email(email: str, token: str):
 
     {reset_link}
 
-    This link will expire in 60 minutes.
+    This link will expire in 15 minutes.
     If you did not request this, please ignore this email.
 
     Regards,

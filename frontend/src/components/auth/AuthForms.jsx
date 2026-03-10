@@ -2,6 +2,7 @@
  * Auth forms — Login and Register with light-theme professional styling.
  */
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 
 export function LoginForm({ onSwitch }) {
@@ -41,6 +42,11 @@ export function LoginForm({ onSwitch }) {
                     placeholder="••••••••"
                     required
                 />
+                <div className="flex justify-end mt-2">
+                    <Link to="/forgot-password" size="sm" className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-widest transition-colors">
+                        Forgot Password?
+                    </Link>
+                </div>
             </div>
 
             {error && (

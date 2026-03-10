@@ -41,8 +41,9 @@ export const authAPI = {
 
     me: () => api.get('/auth/me'),
     getStats: () => api.get('/auth/stats'),
-    requestPasswordReset: (email) => api.post('/auth/password-reset-request', { email }),
-    confirmPasswordReset: (token, newPassword) => api.post('/auth/password-reset-confirm', { token, new_password: newPassword }),
+    deleteHistory: () => api.delete('/auth/history'),
+    requestPasswordReset: (email) => api.post('/auth/forgot-password', { email }),
+    confirmPasswordReset: (token, newPassword) => api.post('/auth/reset-password', { token, new_password: newPassword }),
 };
 
 // ── Sessions ─────────────────────────────────────────

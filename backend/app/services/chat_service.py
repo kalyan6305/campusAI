@@ -8,6 +8,7 @@ import logging
 from collections.abc import AsyncIterator
 from datetime import datetime, timezone
 
+import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -26,6 +27,7 @@ from app.agents.research_agent import ResearchAgent
 from app.agents.career_agent import CareerAgent
 from app.agents.academic_agent import AcademicAgent
 from app.services.web_search_service import web_search_service
+from app.services.student_service import get_student_by_roll
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +48,7 @@ def _get_models(module: str = "chat"):
         return MODEL_MAP["agents"]
     
     # Fallback for campus sub-modules to 'campus' table
-    if module in ["academics", "bus services", "hostel", "events", "canteen", "library", "exam", "placement"]:
+    if module in ["academics", "bus services", "hostel", "fees", "attendance", "sports", "transport", "results", "student info"]:
         return MODEL_MAP["campus"]
 
     logger.warning("Unknown module '%s' requested, falling back to 'chat' table", module)
@@ -123,10 +125,23 @@ async def process_chat(
         for reg, chunks in rag_context.items():
             context_str += f"\n--- {reg} Regulation ---\n" + "\n".join(chunks)
 
-    # Route agent based on arbitrary mode determination (currently non-stream doesn't receive metadata, defaulting to ResearchAgent for now)
+    # Route agent based on arbitrary mode determination
     try:
-        research_agent = ResearchAgent()
-        reply_text = await research_agent.research(user_message, context_str)
+        if module == "student info":
+            # Deterministic Excel lookup
+            student_data = get_student_by_roll(user_message)
+            if student_data:
+                reply_text = "🎓 **Student Details**\n\n"
+                # Vertical list formatting
+                for key, value in student_data.items():
+                    if pd.notna(value) and str(value).strip() != '':
+                        display_key = key.replace('_', ' ').title()
+                        reply_text += f"**{display_key}**: {value}\n\n"
+            else:
+                reply_text = "Student not found in the dataset."
+        else:
+            research_agent = ResearchAgent()
+            reply_text = await research_agent.research(user_message, context_str)
     except Exception as exc:
         logger.error("Agent generate failed: %s", exc)
         raise LLMError(f"Agent error: {exc}") from exc
@@ -211,7 +226,23 @@ async def process_chat_stream(
     full_reply: list[str] = []
 
     try:
-        if mode == "career":
+        if module == "student info":
+            # Deterministic Excel lookup
+            student_data = get_student_by_roll(user_message)
+            if student_data:
+                reply = "🎓 **Student Details**\n\n"
+                for key, value in student_data.items():
+                    if pd.notna(value) and str(value).strip() != '':
+                        display_key = key.replace('_', ' ').title()
+                        reply += f"**{display_key}**: {value}\n\n"
+            else:
+                reply = "Student not found in the dataset."
+                
+            for token in reply:
+                full_reply.append(token)
+                yield {"mode": mode, "token": token}
+                
+        elif mode == "career":
             career_agent = CareerAgent()
             async for token in career_agent.stream_response(user_id, user_message, db):
                 full_reply.append(token)

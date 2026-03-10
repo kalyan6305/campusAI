@@ -53,25 +53,35 @@ async def get_stats(
     return stats
 
 
-@router.post("/password-reset-request")
-async def request_password_reset(
+@router.post("/forgot-password")
+async def forgot_password(
     body: PasswordResetRequest,
     db: AsyncSession = Depends(get_db)
 ):
     """Generate a token and send a reset email."""
-    token = await auth_service.create_password_reset_token(body.email, db)
+    token = await auth_service.create_forgot_password_token(body.email, db)
     if token:
         await email_service.send_password_reset_email(body.email, token)
         
-    # Return success even if email not found for security (obscure user existence)
+    # Generic message to prevent user enumeration
     return {"message": "If this email is registered, a reset link has been sent."}
 
 
-@router.post("/password-reset-confirm")
-async def confirm_password_reset(
+@router.post("/reset-password")
+async def reset_password_endpoint(
     body: PasswordResetConfirm,
     db: AsyncSession = Depends(get_db)
 ):
-    """Validate token and update password."""
-    await auth_service.update_password_with_token(body.token, body.new_password, db)
+    """Validate token from DB and update password."""
+    await auth_service.reset_password_with_token(body.token, body.new_password, db)
     return {"message": "Password updated successfully."}
+
+
+@router.delete("/history")
+async def delete_history(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Wipe all user session and message history."""
+    await auth_service.clear_user_history(current_user.id, db)
+    return {"message": "All history has been purged from official records."}

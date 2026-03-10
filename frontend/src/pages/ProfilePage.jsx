@@ -44,6 +44,35 @@ const ProfilePage = () => {
         }
     };
 
+    const handleClearHistory = async () => {
+        if (!window.confirm("CRITICAL: This will permanently wipe all intelligence sessions and telemetry data from official records. Proceed?")) return;
+
+        setResetStatus({ type: 'loading', message: 'Purging historical records...' });
+        try {
+            await authAPI.deleteHistory();
+            setResetStatus({ type: 'success', message: 'Data purged. System state reset.' });
+            // Refresh stats and activity
+            fetchDashboardData();
+        } catch (err) {
+            setResetStatus({ type: 'error', message: 'Purge failed. Protocol error.' });
+        }
+    };
+
+    const handleDownloadLogs = () => {
+        const data = {
+            user_profile: userData,
+            usage_metrics: stats,
+            telemetry: activity,
+            timestamp: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `campus_ai_logs_${user.id}.json`;
+        a.click();
+    };
+
     useEffect(() => {
         if (user) fetchDashboardData();
     }, [user]);
@@ -67,14 +96,14 @@ const ProfilePage = () => {
         memberSince: new Date(user.created_at || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     };
 
-    const statCards = [
-        { label: 'Intelligence Sessions', value: stats?.total_sessions || 0, icon: '🧠', color: 'blue' },
-        { label: 'Knowledge Interactions', value: stats?.total_messages || 0, icon: '⚡', color: 'purple' },
-        { label: 'Days Active', value: 1, icon: '🗓️', color: 'green' },
-    ];
+    const daysActive = user.created_at
+        ? Math.max(1, Math.ceil((new Date() - new Date(user.created_at)) / (1000 * 60 * 60 * 24)))
+        : 1;
+
+    const loginStreak = stats?.login_streak || 0;
 
     return (
-        <div className="min-h-full bg-gray-50 dark:bg-gray-900 font-sans p-6 lg:p-10 space-y-10 overflow-y-auto">
+        <div className="h-full bg-gray-50 dark:bg-gray-900 font-sans p-6 lg:p-10 pb-20 space-y-10 overflow-y-auto">
             {/* Header Area */}
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
@@ -96,8 +125,8 @@ const ProfilePage = () => {
             {/* Notification/Status Bar */}
             {resetStatus.message && (
                 <div className={`p-4 rounded-2xl border flex items-center gap-4 animate-bounce-subtle ${resetStatus.type === 'loading' ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300' :
-                        resetStatus.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300' :
-                            'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
+                    resetStatus.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300' :
+                        'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
                     }`}>
                     <span className="text-xl">
                         {resetStatus.type === 'loading' ? '⏳' : resetStatus.type === 'success' ? '✔' : '❌'}
@@ -106,21 +135,46 @@ const ProfilePage = () => {
                 </div>
             )}
 
-            {/* Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {statCards.map((card, idx) => (
-                    <div key={idx} className="relative group cursor-default">
-                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-10 group-hover:opacity-20 transition duration-500"></div>
-                        <div className="relative bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300">
-                            <div className="flex items-center justify-between mb-4">
-                                <span className="text-3xl">{card.icon}</span>
-                                <span className={`text-xs font-black uppercase tracking-widest text-${card.color}-500 opacity-60`}>Live Data</span>
-                            </div>
-                            <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-1">{card.value}</h3>
-                            <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{card.label}</p>
+            {/* Streak Hero Card */}
+            <div className="relative group max-w-2xl mx-auto w-full">
+                <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+
+                <div className="relative bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-[2.5rem] p-8 md:p-12 shadow-2xl flex flex-col md:flex-row items-center gap-8 overflow-hidden transform group-hover:scale-[1.01] transition-all duration-500">
+                    {/* Background Graphic */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 dark:bg-orange-500/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+
+                    <div className="relative flex-shrink-0">
+                        <div className="relative w-32 h-32 md:w-40 md:h-40 flex items-center justify-center">
+                            {/* Animated Fire Ring */}
+                            <div className="absolute inset-0 border-[6px] border-orange-100 dark:border-orange-900/30 rounded-full"></div>
+                            <div
+                                className="absolute inset-0 border-[6px] border-orange-500 rounded-full border-t-transparent animate-spin"
+                                style={{ animationDuration: '3s' }}
+                            ></div>
+
+                            <span className="text-6xl md:text-7xl animate-bounce-subtle drop-shadow-xl">🔥</span>
                         </div>
                     </div>
-                ))}
+
+                    <div className="relative text-center md:text-left space-y-2">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 text-orange-600 dark:text-orange-400 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                            <span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></span>
+                            Operational Streak
+                        </div>
+                        <h2 className="text-6xl md:text-7xl font-black text-gray-900 dark:text-white tracking-tighter leading-none">
+                            {loginStreak} <span className="text-2xl md:text-3xl font-bold text-gray-400 dark:text-gray-500 tracking-tight">DAYS</span>
+                        </h2>
+                        <p className="text-gray-500 dark:text-gray-400 font-bold text-lg max-w-xs">
+                            {loginStreak > 0
+                                ? "Consecutive system interactions maintained. Keep the momentum."
+                                : "Initialize your first session today to start your streak."}
+                        </p>
+                    </div>
+
+                    <div className="absolute bottom-0 right-10 opacity-5 dark:opacity-10 pointer-events-none">
+                        <span className="text-[12rem] font-black select-none tracking-tighter">STREAK</span>
+                    </div>
+                </div>
             </div>
 
             {/* Main Content Grid */}
@@ -195,7 +249,7 @@ const ProfilePage = () => {
                                                 {session.title}
                                             </h4>
                                             <p className="text-xs text-gray-400 font-bold uppercase tracking-tighter">
-                                                Interacted {new Date(session.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                Interacted {new Date(session.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </p>
                                         </div>
                                         <div className="opacity-0 group-hover:opacity-100 transition duration-300">
@@ -214,7 +268,7 @@ const ProfilePage = () => {
                         </div>
                     </div>
 
-                    {/* Quick Preferences */}
+                    {/* Quick Preferences & Management */}
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-6 shadow-sm">
                             <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4">Neural Theme</h3>
@@ -233,7 +287,8 @@ const ProfilePage = () => {
                                 </div>
                             </button>
                         </div>
-                        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-6 shadow-sm">
+
+                        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
                             <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4">Security Protocol</h3>
                             <div className="space-y-3">
                                 <button
@@ -246,6 +301,24 @@ const ProfilePage = () => {
                                 <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center font-bold px-4">
                                     Sends a secure reset link to your registered email.
                                 </p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-6 shadow-sm md:col-span-2">
+                            <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4">Data Management</h3>
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <button
+                                    onClick={handleDownloadLogs}
+                                    className="flex-1 py-4 bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 border border-gray-100 dark:border-gray-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 transition-all active:scale-95"
+                                >
+                                    💾 Download Operation Logs
+                                </button>
+                                <button
+                                    onClick={handleClearHistory}
+                                    className="flex-1 py-4 bg-red-50/50 dark:bg-red-900/10 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-100/50 dark:border-red-900/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 transition-all active:scale-95"
+                                >
+                                    🗑️ Purge Records
+                                </button>
                             </div>
                         </div>
                     </div>

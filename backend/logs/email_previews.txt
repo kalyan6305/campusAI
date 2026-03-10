@@ -18,3 +18,63 @@ BODY:
     
 ==================================================
 
+==================================================
+TO: udayreddi28@gmail.com
+SUBJECT: Campus AI - Password Reset Request
+BODY:
+
+    Hello,
+
+    We received a request to reset your password for Campus AI OS.
+    Click the link below to set a new password:
+
+    http://localhost:5173/reset-password?token=OyXq799qjltFfx8AGfoGYTCyjn0VLz0Yr-TgU6a49PM
+
+    This link will expire in 15 minutes.
+    If you did not request this, please ignore this email.
+
+    Regards,
+    Campus AI Team
+    
+==================================================
+
+==================================================
+TO: udayreddi28@gmail.com
+SUBJECT: Campus AI - Password Reset Request
+BODY:
+
+    Hello,
+
+    We received a request to reset your password for Campus AI OS.
+    Click the link below to set a new password:
+
+    http://localhost:5173/reset-password?token=oX5JZNC4qZHIOMcnojx5rm9dxDK6KpvH1HTfmNI1j6w
+
+    This link will expire in 15 minutes.
+    If you did not request this, please ignore this email.
+
+    Regards,
+    Campus AI Team
+    
+==================================================
+
+==================================================
+TO: udayreddi28@gmail.com
+SUBJECT: Campus AI - Password Reset Request
+BODY:
+
+    Hello,
+
+    We received a request to reset your password for Campus AI OS.
+    Click the link below to set a new password:
+
+    http://localhost:5173/reset-password?token=_5OAumsbqX53OlWSB0AO-RRMQOocW6am5MySTbWZrng
+
+    This link will expire in 15 minutes.
+    If you did not request this, please ignore this email.
+
+    Regards,
+    Campus AI Team
+    
+==================================================
+

@@ -61,7 +61,9 @@ def create_app() -> FastAPI:
     )
 
     # ── Routes ────────────────────────────────────────
+    from app.api.v1.student import router as student_router
     app.include_router(v1_router)
+    app.include_router(student_router, prefix="/api")
 
     # ── Health check ──────────────────────────────────
     @app.get("/health", tags=["Health"])

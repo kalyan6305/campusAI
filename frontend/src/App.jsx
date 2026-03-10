@@ -12,6 +12,8 @@ import AgentsPage from './pages/AgentsPage';
 import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage';
 import AuthPage from './pages/AuthPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import VoicePage from './pages/VoicePage';
 import MainLayout from './components/layout/MainLayout';
 import ProtectedLayout from './components/layout/ProtectedLayout';
@@ -60,6 +62,22 @@ export default function App() {
                                 <AuthPage />
                             </MainLayout>
                         )
+                    }
+                />
+                <Route
+                    path="/forgot-password"
+                    element={
+                        <MainLayout>
+                            <ForgotPasswordPage />
+                        </MainLayout>
+                    }
+                />
+                <Route
+                    path="/reset-password"
+                    element={
+                        <MainLayout>
+                            <ResetPasswordPage />
+                        </MainLayout>
                     }
                 />
 
