@@ -6,22 +6,23 @@ from __future__ import annotations
 
 import logging
 from collections.abc import AsyncIterator
+from typing import Any, Optional
 from datetime import datetime, timezone
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select  # type: ignore
+from sqlalchemy.ext.asyncio import AsyncSession  # type: ignore
+from sqlalchemy.orm import selectinload  # type: ignore
 
-from app.llm.factory import get_llm_provider
-from app.models.message import Message
-from app.models.session import ChatSession
-from app.utils.exceptions import LLMError, NotFoundError
-from app.services import rag_document_service
-from app.rag import rag_service
-from app.agents.research_agent import ResearchAgent
-from app.agents.career_agent import CareerAgent
-from app.agents.academic_agent import AcademicAgent
-from app.services.web_search_service import web_search_service
+from app.llm.factory import get_llm_provider  # type: ignore
+from app.models.message import Message  # type: ignore
+from app.models.session import ChatSession  # type: ignore
+from app.utils.exceptions import LLMError, NotFoundError  # type: ignore
+from app.services import rag_document_service  # type: ignore
+from app.rag import rag_service  # type: ignore
+from app.agents.research_agent import ResearchAgent  # type: ignore
+from app.agents.career_agent import CareerAgent  # type: ignore
+from app.agents.academic_agent import AcademicAgent  # type: ignore
+from app.services.web_search_service import web_search_service  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +110,8 @@ async def process_chat(
 
     # Auto-title the session from first exchange
     if len(session.messages) <= 1:
-        session.title = user_message[:80]
+        msg_str = str(user_message or "")
+        session.title = msg_str[0:80]  # type: ignore
         await db.flush()
     
     await db.commit()
@@ -123,8 +125,8 @@ async def process_chat_stream(
     user_message: str,
     user_id: int,
     db: AsyncSession,
-    metadata: dict = None
-) -> AsyncIterator[str]:
+    metadata: Optional[Any] = None
+) -> AsyncIterator[Any]:
     """
     Streaming variant:
     1. Save user message
@@ -153,16 +155,20 @@ async def process_chat_stream(
         # Let's signify search is happening
         yield {"mode": mode, "status": "SEARCHING", "token": ""}
         search_data = await web_search_service.search(user_message)
-        search_results = search_data["results"]
-        platform_links = search_data["platform_links"]
+        search_results = search_data.get("sources", [])
         
-        # Format web context for Agent
+        # Format web context for Agent with numbering
         web_context = "--- Web Search Results ---\n"
-        for res in search_results:
-            web_context += f"Source: {res['source']}\nTitle: {res['title']}\nSnippet: {res['snippet']}\n\n"
+        for i, res in enumerate(search_results):
+            content = res.get('snippet', '')
+            if res.get('extracted_content'):
+                content = res['extracted_content']
+            
+            web_context += f"Source [{i+1}]: {res.get('domain', res.get('source'))}\nTitle: {res['title']}\nURL: {res.get('url', res.get('link'))}\nContent: {content}\n\n"
             
         # Yield metadata to frontend for sidebar population
-        yield {"mode": mode, "status": "METADATA", "metadata": {"sources": search_results, "platform_links": platform_links}}
+        logger.info("Yielding %d sources to frontend metadata", len(search_results))
+        yield {"mode": mode, "status": "METADATA", "metadata": {"sources": search_results}}
 
     # --- RAG Injection ---
     rag_context = await rag_service.query_knowledge_by_regulation(user_message)
@@ -203,8 +209,20 @@ async def process_chat_stream(
     )
     db.add(assistant_msg)
 
+    # Persist sources for later restoration (tools mode only)
+    if mode == "tools" and search_results:
+        import json as _json
+        sources_json = _json.dumps(search_results, default=str)
+        sources_msg = Message(
+            session_id=session_id,
+            role="system",
+            content=f"__SOURCES__:{sources_json}",
+        )
+        db.add(sources_msg)
+
     if len(session.messages) <= 1:
-        session.title = user_message[:80]
+        msg_final = str(user_message or "")
+        session.title = msg_final[0:80]  # type: ignore
 
     await db.commit()
     logger.info("Stream completed: session=%d chars=%d", session_id, len(reply_text))

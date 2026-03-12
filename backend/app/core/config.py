@@ -9,7 +9,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict  # type: ignore
 
 
 class Settings(BaseSettings):
@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     GEMINI_API_KEY: str = ""
     GROQ_API_KEY: str = ""
+    SERPER_API_KEY: str = ""
+    YOUTUBE_API_KEY: str = ""
 
     # ── CORS ──────────────────────────────────────────
     CORS_ORIGINS: str = '["http://localhost:5173"]'

@@ -10,12 +10,12 @@ const useChatStore = create((set, get) => ({
     currentModule: 'chat', // Track the module for the active view
     messages: [],
     isStreaming: false,
+    streamingStatus: null, // null | 'SEARCHING' | 'GENERATING'
     ragDocuments: [],
     retrievedChunks: [],
     researchSources: {
         browser: [],
         social: [],
-        platform_links: []
     },
 
     // ── Session management ────────────────────────────
@@ -102,8 +102,9 @@ const useChatStore = create((set, get) => ({
         set((state) => ({
             messages: [...state.messages, userMsg],
             isStreaming: true,
+            streamingStatus: 'SEARCHING',
             streamingContent: '',
-            researchSources: { browser: [], social: [], platform_links: [] }
+            researchSources: { browser: [], social: [] }
         }));
 
         await chatAPI.stream(
@@ -113,18 +114,23 @@ const useChatStore = create((set, get) => ({
             (data) => {
                 const { token, status, metadata: streamMetadata, mode: streamMode } = data;
 
+                if (status === 'SEARCHING') {
+                    set({ streamingStatus: 'SEARCHING' });
+                }
+
                 if (status === 'METADATA' && streamMetadata?.sources) {
                     set((state) => ({
+                        streamingStatus: 'GENERATING',
                         researchSources: {
                             ...state.researchSources,
-                            [streamMode === 'tools' ? 'browser' : streamMode]: streamMetadata.sources,
-                            platform_links: streamMetadata.platform_links || []
+                            [streamMode === 'tools' ? 'browser' : streamMode]: streamMetadata.sources
                         }
                     }));
                 }
 
                 if (token) {
                     set((state) => ({
+                        streamingStatus: 'GENERATING',
                         streamingContent: state.streamingContent + token,
                     }));
                 }
@@ -137,6 +143,7 @@ const useChatStore = create((set, get) => ({
                         { role: 'assistant', content: state.streamingContent },
                     ],
                     isStreaming: false,
+                    streamingStatus: null,
                     streamingContent: '',
                 }));
                 // Refresh session list (title may have changed)
@@ -151,6 +158,7 @@ const useChatStore = create((set, get) => ({
                         { role: 'assistant', content: `⚠️ Error: ${error}` },
                     ],
                     isStreaming: false,
+                    streamingStatus: null,
                     streamingContent: '',
                 }));
             },

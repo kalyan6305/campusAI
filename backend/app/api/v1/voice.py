@@ -7,21 +7,21 @@ from __future__ import annotations
 import json
 import logging
 
-from fastapi import APIRouter, Depends
-from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends  # type: ignore
+from fastapi.responses import StreamingResponse  # type: ignore
+from sqlalchemy.ext.asyncio import AsyncSession  # type: ignore
 
-from app.db.base import get_db
-from app.models.user import User
-from app.schemas.voice import (
+from app.db.base import get_db  # type: ignore
+from app.models.user import User  # type: ignore
+from app.schemas.voice import (  # type: ignore
     VoiceChatRequest,
     VoiceMessageSchema,
     VoiceSessionCreate,
     VoiceSessionListResponse,
     VoiceSessionResponse,
 )
-from app.services import voice_service
-from app.utils.dependencies import get_current_user
+from app.services import voice_service  # type: ignore
+from app.utils.dependencies import get_current_user  # type: ignore
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/voice", tags=["Voice"])

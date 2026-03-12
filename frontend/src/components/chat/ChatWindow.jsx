@@ -3,7 +3,7 @@ import useChatStore from '../../store/chatStore';
 import MessageBubble from './MessageBubble';
 
 export default function ChatWindow() {
-    const { messages, isStreaming, streamingContent, activeSessionId } = useChatStore();
+    const { messages, isStreaming, streamingContent, streamingStatus, activeSessionId } = useChatStore();
     const bottomRef = useRef(null);
 
     useEffect(() => {
@@ -44,6 +44,16 @@ export default function ChatWindow() {
                                 <p className="text-gray-900 dark:text-gray-100 text-sm leading-relaxed whitespace-pre-wrap">
                                     {streamingContent}<span className="inline-block w-1 h-4 bg-blue-600 dark:bg-blue-500 ml-1 animate-pulse" />
                                 </p>
+                            ) : streamingStatus === 'SEARCHING' ? (
+                                <div className="flex items-center gap-2 py-1">
+                                    <span className="text-lg animate-spin">🌐</span>
+                                    <span className="text-sm text-blue-600 dark:text-blue-400 font-medium animate-pulse">Searching the web…</span>
+                                </div>
+                            ) : streamingStatus === 'GENERATING' ? (
+                                <div className="flex items-center gap-2 py-1">
+                                    <span className="text-lg animate-pulse">🧠</span>
+                                    <span className="text-sm text-purple-600 dark:text-purple-400 font-medium animate-pulse">Generating answer…</span>
+                                </div>
                             ) : (
                                 <div className="flex items-center gap-1 py-1.5">
                                     <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />

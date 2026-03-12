@@ -249,9 +249,26 @@ export default function MessageBubble({ role, content, index }) {
     };
 
     // Parse confidence block for AI messages
-    const { mainContent, confidence } = isUser
+    let { mainContent, confidence } = isUser
         ? { mainContent: content, confidence: null }
         : parseConfidence(content);
+
+    if (!isUser) {
+        // Force spacing and pointwise formatting for AI messages
+        if (/^\s*[-*•]|\d+\./m.test(mainContent)) {
+            // Already has list items: ensure they are separated by double newlines for spacing
+            mainContent = mainContent.replace(/([^\n])\n\s*([-*•]|\d+\.)/g, '$1\n\n$2');
+        } else {
+            // No list items found: transform paragraphs into bullet points by splitting at sentence boundaries.
+            // (e.g., period followed by space and Capital Letter)
+            const formatted = mainContent.replace(/([.!?])\s+(?=[A-Z0-9])/g, '$1\n\n- ');
+            if (formatted !== mainContent && !formatted.trim().startsWith('-')) {
+                mainContent = '- ' + formatted;
+            } else {
+                mainContent = formatted;
+            }
+        }
+    }
 
     return (
         <div className={`group flex animate-slide-up ${isUser ? 'justify-end' : 'justify-start'} mb-6 px-4`}>
