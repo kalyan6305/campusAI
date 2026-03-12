@@ -85,3 +85,10 @@
       0 0 60px 12px rgba(124, 58, 237, 0.2);
   }
 }
+
+/* Voice cursor blink animation */
+@keyframes voiceCursorBlink {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}

@@ -5,7 +5,7 @@ import VoiceOrb from '../components/voice/VoiceOrb';
 import VoiceMicButton from '../components/voice/VoiceMicButton';
 import VoiceStatusIndicator from '../components/voice/VoiceStatusIndicator';
 import VoiceActivityBars from '../components/voice/VoiceActivityBars';
-import VoiceSpeakingWaveform from '../components/voice/VoiceSpeakingWaveform';
+import VoiceSparkRing from '../components/voice/VoiceSparkRing';
 import useVoiceStore from '../store/voiceStore';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -29,6 +29,8 @@ const VoicePage = () => {
     } = useVoiceStore();
 
     const [voiceState, setVoiceState] = useState('idle');
+    const [revealedText, setRevealedText] = useState('');
+    const [showCursor, setShowCursor] = useState(false);
     const synthRef = useRef(window.speechSynthesis);
     const wasStreamingRef = useRef(false);
     const bottomRef = useRef(null);
@@ -37,10 +39,24 @@ const VoicePage = () => {
     const activeRecognitionRef = useRef(null);
     const wakeRecognitionRef = useRef(null);
     const voiceSessionRef = useRef(null);
+    const wordTimerRef = useRef(null);
+    const fullTextRef = useRef('');
 
     // ── Ref-based function storage to break circular dependencies ──
     const startWakeWordListenerRef = useRef(null);
     const startActiveListeningRef = useRef(null);
+
+    // ── Helper: stop word-by-word animation ──
+    const stopWordAnimation = useCallback((showFull = true) => {
+        if (wordTimerRef.current) {
+            clearInterval(wordTimerRef.current);
+            wordTimerRef.current = null;
+        }
+        setShowCursor(false);
+        if (showFull && fullTextRef.current) {
+            setRevealedText(fullTextRef.current);
+        }
+    }, []);
 
     // Sync voiceSessionRef with store
     useEffect(() => {
@@ -249,34 +265,66 @@ const VoicePage = () => {
     const speakText = useCallback((text) => {
         const synth = synthRef.current;
         synth.cancel();
+        stopWordAnimation(false);
 
         // Start wake listener BEFORE TTS so it can catch "stop" during speech
         startWakeWordListener();
 
+        // Store the original markdown text for reveal
+        fullTextRef.current = text;
+        setRevealedText('');
+        setShowCursor(true);
+
+        // Build word arrays for mapping cleanText position → original text words
+        const originalWords = text.split(/\s+/);
         const cleanText = stripMarkdown(text);
+
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.rate = 1;
         utterance.pitch = 1;
         utterance.volume = 1;
-        utterance.onstart = () => {
-            console.log('[Voice] TTS started speaking (wake listener active for stop detection)');
-            setVoiceState('speaking');
+
+        // Sync text reveal with actual speech position
+        utterance.onboundary = (event) => {
+            if (event.name === 'word') {
+                // Count how many words have been spoken so far in the clean text
+                const spokenPortion = cleanText.substring(0, event.charIndex + (event.charLength || 1));
+                const spokenWordCount = spokenPortion.split(/\s+/).filter(Boolean).length;
+                // Reveal the same number of words from the original markdown text
+                const revealed = originalWords.slice(0, spokenWordCount).join(' ');
+                setRevealedText(revealed);
+            }
         };
+
+        utterance.onstart = () => {
+            console.log('[Voice] TTS started speaking — text synced via onboundary');
+            setVoiceState('speaking');
+            setShowCursor(true);
+        };
+
         utterance.onend = () => {
             console.log('[Voice] TTS finished speaking');
+            stopWordAnimation(true);
             setVoiceState('wake-listening');
         };
+
         utterance.onerror = () => {
             console.log('[Voice] TTS error or cancelled');
+            // On stop command: preserve what's been shown, remove cursor
+            setShowCursor(false);
+            if (!revealedText) {
+                setRevealedText(fullTextRef.current);
+            }
             setVoiceState('wake-listening');
         };
+
         synth.speak(utterance);
-    }, [startWakeWordListener]);
+    }, [startWakeWordListener, stopWordAnimation]);
 
     // ── Auto-scroll ──
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [voiceMessages, streamingContent]);
+    }, [voiceMessages, streamingContent, revealedText]);
 
     // ── Load sessions on mount ──
     useEffect(() => {
@@ -299,10 +347,11 @@ const VoicePage = () => {
     useEffect(() => {
         return () => {
             stopWakeWordListener();
+            stopWordAnimation(false);
             if (activeRecognitionRef.current) activeRecognitionRef.current.abort();
             synthRef.current.cancel();
         };
-    }, [stopWakeWordListener]);
+    }, [stopWakeWordListener, stopWordAnimation]);
 
     // ── Start wake word listener on mount ──
     useEffect(() => {
@@ -359,10 +408,11 @@ const VoicePage = () => {
                 </span>
             </div>
 
-            <VoiceOrb voiceState={voiceState === 'wake-listening' ? 'idle' : voiceState} size={hasMessages ? 120 : 160} />
-
-            {/* Speaking waveform — only visible when AI speaks */}
-            <VoiceSpeakingWaveform isActive={voiceState === 'speaking'} />
+            {/* Orb + Spark Ring container */}
+            <div className="relative flex items-center justify-center" style={{ width: hasMessages ? 240 : 320, height: hasMessages ? 240 : 320 }}>
+                <VoiceSparkRing voiceState={voiceState === 'wake-listening' ? 'idle' : voiceState} orbSize={hasMessages ? 120 : 160} />
+                <VoiceOrb voiceState={voiceState === 'wake-listening' ? 'idle' : voiceState} size={hasMessages ? 120 : 160} />
+            </div>
 
             <VoiceActivityBars voiceState={voiceState === 'wake-listening' ? 'idle' : voiceState} />
             <VoiceStatusIndicator voiceState={voiceState} />
@@ -412,14 +462,26 @@ const VoicePage = () => {
                         </div>
                     ) : (
                         <div className="px-6 py-4 space-y-4">
-                            {voiceMessages.map((msg, i) => (
-                                <MessageBubble
-                                    key={i}
-                                    role={msg.role}
-                                    content={msg.content}
-                                    isUser={msg.role === 'user'}
-                                />
-                            ))}
+                            {voiceMessages.map((msg, i) => {
+                                // For the last assistant message during speaking, show synced revealed text
+                                const isLastAssistant = msg.role === 'assistant' && i === voiceMessages.length - 1;
+                                const isSpeaking = voiceState === 'speaking';
+                                let displayContent = msg.content;
+
+                                if (isLastAssistant && isSpeaking && revealedText) {
+                                    // Append cursor inline with the text
+                                    displayContent = revealedText + (showCursor ? ' ▌' : '');
+                                }
+
+                                return (
+                                    <MessageBubble
+                                        key={i}
+                                        role={msg.role}
+                                        content={displayContent}
+                                        isUser={msg.role === 'user'}
+                                    />
+                                );
+                            })}
                             {isStreaming && streamingContent && (
                                 <MessageBubble
                                     role="assistant"
