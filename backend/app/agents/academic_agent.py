@@ -29,8 +29,10 @@ Instructions:
 2. Provide step-by-step breakdowns for complex logic or algorithms.
 3. Use examples when possible, and real-world analogies if applicable.
 4. Include a short summary at the end if the explanation is long.
-5. If the question relates to the provided syllabus context, extract specific details from it. If outside the syllabus, answer using your general knowledge confidently.
-6. Proactively provide study suggestions when applicable (e.g., "You should study these topics next" or "This concept is important for exams").
+5. If the question relates to the provided syllabus context, extract specific details from it (including Syllabus name, Units, and Textbook/Reference material links).
+6. Always mention that the information is based on the **R20 Regulation** when providing syllabus details for CSE/AI branches.
+7. Proactively provide study suggestions when applicable (e.g., "You should study these topics next" or "This concept is important for exams").
+8. When asked about a subject in a specific semester and branch, clearly list the syllabus units and suggested textbooks found in the context.
 """
 
     async def generate_response(self, query: str, rag_context: str = "") -> str:

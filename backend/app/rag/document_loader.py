@@ -15,13 +15,26 @@ def detect_regulation(filename: str) -> str:
         return "R22"
     elif "r21" in fn:
         return "R21"
+    elif "r20" in fn:
+        return "R20"
     else:
         return "UNKNOWN"
+
+def detect_branch(filename: str) -> str:
+    """
+    Helper to extract branch from filename.
+    """
+    fn = filename.upper()
+    branches = ['CSE', 'ECE', 'EEE', 'MECH', 'CIVIL']
+    for b in branches:
+        if b in fn:
+            return b
+    return "UNKNOWN"
 
 def load_documents(folder_path: str) -> list[dict]:
     """
     Load PDF documents from a specified folder, extract text, and split into chunks.
-    Returns: list of {"text": chunk_text, "metadata": {"source_file": filename, "regulation": regulation}}
+    Returns: list of {"text": chunk_text, "metadata": {"source_file": filename, "regulation": regulation, "branch": branch}}
     """
     all_chunks = []
     
@@ -33,6 +46,7 @@ def load_documents(folder_path: str) -> list[dict]:
         if filename.endswith(".pdf"):
             file_path = os.path.join(folder_path, filename)
             regulation = detect_regulation(filename)
+            branch = detect_branch(filename)
             try:
                 reader = PdfReader(file_path)
                 text = ""
@@ -52,7 +66,8 @@ def load_documents(folder_path: str) -> list[dict]:
                             "text": chunk_text,
                             "metadata": {
                                 "source_file": filename,
-                                "regulation": regulation
+                                "regulation": regulation,
+                                "branch": branch
                             }
                         })
                 

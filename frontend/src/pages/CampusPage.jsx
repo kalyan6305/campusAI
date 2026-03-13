@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import CampusSidebar from '../components/campus/CampusSidebar';
 import CampusHeader from '../components/campus/CampusHeader';
-import AcademicsNavigator from '../components/campus/AcademicsNavigator';
+
 import ChatWindow from '../components/chat/ChatWindow';
 import ChatInput from '../components/chat/ChatInput';
 import useChatStore from '../store/chatStore';
@@ -68,12 +68,7 @@ const CampusPage = () => {
             <div className="flex-grow flex flex-col min-w-0">
                 <CampusHeader activeModule={selectedModule} />
 
-                {/* Academics Navigation (Conditional) */}
-                {selectedModule === 'Academics' && (
-                    <div className="mb-4">
-                        <AcademicsNavigator />
-                    </div>
-                )}
+
 
                 <div className="flex-grow bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col relative">
                     {/* Active Path Breadcrumb */}

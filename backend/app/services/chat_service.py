@@ -100,6 +100,10 @@ async def process_chat(
     # Resolve module if it's an agent mode
     if mode in ["career", "academic", "research", "coding", "analysis", "current_affairs"]:
         module = "agents"
+    
+    # Map academics module to academic agent mode
+    if module == "academics":
+        mode = "academic"
 
     SessionModel, MessageModel = _get_models(module)
     session = await _get_session_with_messages(session_id, user_id, db, module=module)
@@ -183,6 +187,10 @@ async def process_chat_stream(
     # If mode is an agent, use 'agents' module table
     if mode in ["career", "academic", "research", "coding", "analysis", "current_affairs"]:
         module = "agents"
+
+    # Map academics module to academic agent mode
+    if module == "academics":
+        mode = "academic"
 
     SessionModel, MessageModel = _get_models(module)
     session = await _get_session_with_messages(session_id, user_id, db, module=module)
