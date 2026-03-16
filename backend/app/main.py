@@ -5,11 +5,17 @@ Campus AI Operating System — FastAPI application entrypoint.
 from __future__ import annotations
 
 import logging
+import sys
+import asyncio
 from contextlib import asynccontextmanager
+
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi.staticfiles import StaticFiles
 from app.api.v1.router import v1_router
 from app.core.config import get_settings
 from app.core.logging import setup_logging
@@ -64,6 +70,12 @@ def create_app() -> FastAPI:
     from app.api.v1.student import router as student_router
     app.include_router(v1_router)
     app.include_router(student_router, prefix="/api")
+
+    # ── Static Files ──────────────────────────────────
+    import os
+    static_path = os.path.join(os.path.dirname(__file__), "static")
+    os.makedirs(static_path, exist_ok=True)
+    app.mount("/static", StaticFiles(directory=static_path), name="static")
 
     # ── Health check ──────────────────────────────────
     @app.get("/health", tags=["Health"])

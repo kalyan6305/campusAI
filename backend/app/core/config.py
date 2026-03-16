@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GROQ_API_KEY: str = ""
 
+    # ── Job APIs ──────────────────────────────────────
+    ADZUNA_APP_ID: str = ""
+    ADZUNA_APP_KEY: str = ""
+    SERPAPI_API_KEY: str = ""
+    RAPIDAPI_KEY: str = ""
+
     # ── CORS ──────────────────────────────────────────
     CORS_ORIGINS: str = '["http://localhost:5173"]'
 

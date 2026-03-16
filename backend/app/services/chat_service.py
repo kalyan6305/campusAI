@@ -26,6 +26,7 @@ from app.rag import rag_service
 from app.agents.research_agent import ResearchAgent
 from app.agents.career_agent import CareerAgent
 from app.agents.academic_agent import AcademicAgent
+from app.agents.coding_agent import CodingAgent
 from app.services.web_search_service import web_search_service
 from app.services.student_service import get_student_by_roll
 
@@ -143,6 +144,9 @@ async def process_chat(
                         reply_text += f"**{display_key}**: {value}\n\n"
             else:
                 reply_text = "Student not found in the dataset."
+        elif mode == "coding":
+            coding_agent = CodingAgent()
+            reply_text = await coding_agent.generate_response(user_message)
         else:
             research_agent = ResearchAgent()
             reply_text = await research_agent.research(user_message, context_str)
@@ -258,6 +262,11 @@ async def process_chat_stream(
         elif mode == "academic":
             academic_agent = AcademicAgent()
             async for token in academic_agent.stream_response(user_message, context_str):
+                full_reply.append(token)
+                yield {"mode": mode, "token": token}
+        elif mode == "coding":
+            coding_agent = CodingAgent()
+            async for token in coding_agent.stream_response(user_message):
                 full_reply.append(token)
                 yield {"mode": mode, "token": token}
         else:

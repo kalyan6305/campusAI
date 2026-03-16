@@ -3,9 +3,15 @@ import AgentCard from '../components/agents/AgentCard';
 import ChatWindow from '../components/chat/ChatWindow';
 import ChatInput from '../components/chat/ChatInput';
 import useChatStore from '../store/chatStore';
+import JobApplyAgentUI from '../components/agents/JobApplyAgentUI';
+import ResumeAgentUI from '../components/agents/ResumeAgentUI';
+import InterviewAgentUI from '../components/agents/InterviewAgentUI';
+import ResearchAgentUI from '../components/agents/ResearchAgentUI';
+import CodingAgentUI from '../components/agents/CodingAgentUI';
 
 const AgentsPage = () => {
     const [selectedAgent, setSelectedAgent] = useState(null);
+    const [showHistory, setShowHistory] = useState(true);
     const { sendMessage, isStreaming, activeSessionId, createSession, clearActiveSession, loadSessions, getSessions, selectSession, deleteSession } = useChatStore();
     const sessions = getSessions();
 
@@ -15,12 +21,15 @@ const AgentsPage = () => {
     }, [loadSessions, clearActiveSession]);
 
     const agents = [
-        { id: 'career', name: 'Career Agent', icon: '💼', description: 'Personalized career advice & profiling.', color: 'blue' },
-        { id: 'academic', name: 'Academics Agent', icon: '📖', description: 'Syllabus-based expert tutoring.', color: 'indigo' },
-        { id: 'research', name: 'Research Agent', icon: '🔍', description: 'Deep analysis and information retrieval.', color: 'purple' },
-        { id: 'coding', name: 'Coding Agent', icon: '💻', description: 'Full-stack software development help.', color: 'emerald' },
-        { id: 'analysis', name: 'Analysis Agent', icon: '📊', description: 'Data trends and insight generation.', color: 'amber' },
-        { id: 'current_affairs', name: 'Current Affairs Agent', icon: '📰', description: 'Real-time global news & developments.', color: 'rose' }
+        { id: 'job-apply', name: 'Job Assistant Agent', icon: '🚀', description: 'Find relevant jobs for seekers & graduates. Search by role, filter by location, and get direct application links.', color: 'blue' },
+        { id: 'career', name: 'Career Agent', icon: '💼', description: 'Personalized career advice & profiling.', color: 'indigo' },
+        { id: 'academic', name: 'Academics Agent', icon: '📖', description: 'Syllabus-based expert tutoring.', color: 'purple' },
+        { id: 'research', name: 'Research Agent', icon: '🔬', description: 'Explore research topics, analyze papers, generate project ideas, and get structured research insights.', color: 'emerald' },
+        { id: 'coding', name: 'Coding Agent', icon: '💻', description: 'Generate code, debug programs, and practice coding with an AI-powered coding workspace.', color: 'amber' },
+        { id: 'interview', name: 'Interview Prep Agent', icon: '🎯', description: 'Practice role-specific interview questions and get expert feedback to ace your next job.', color: 'blue' },
+        { id: 'resume', name: 'Resume Agent', icon: '📄', description: 'Optimize your resume for a specific job role by comparing it with a job description and generating a tailored version.', color: 'rose' },
+        // { id: 'analysis', name: 'Analysis Agent', icon: '📊', description: 'Data trends and insight generation.', color: 'amber' },
+        // { id: 'current_affairs', name: 'Current Affairs Agent', icon: '📰', description: 'Real-time global news & developments.', color: 'rose' }
     ];
 
     const activeAgent = agents.find(a => a.id === selectedAgent);
@@ -41,6 +50,7 @@ const AgentsPage = () => {
     const handleBack = () => {
         clearActiveSession();
         setSelectedAgent(null);
+        setShowHistory(true);
     };
 
     return (
@@ -99,54 +109,87 @@ const AgentsPage = () => {
                                     {activeAgent.id}
                                 </span>
                             </div>
+
+                            {/* History toggle — only show if sidebar is applicable */}
+                            {(selectedAgent !== 'resume' && selectedAgent !== 'interview' && selectedAgent !== 'research') && (
+                                <button
+                                    onClick={() => setShowHistory(prev => !prev)}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-100 dark:hover:border-blue-800 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider"
+                                    title={showHistory ? 'Hide History' : 'Show History'}
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        {showHistory
+                                            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        }
+                                    </svg>
+                                    {showHistory ? 'Hide History' : 'Show History'}
+                                </button>
+                            )}
                         </div>
                     </header>
 
                     <div className="flex-grow flex gap-6 min-w-0 h-full overflow-hidden">
                         {/* Agent-Specific History Sidebar */}
-                        <aside className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col">
-                            <div className="p-4 border-b border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
-                                <h2 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Agent History</h2>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
-                                {sessions.length === 0 ? (
-                                    <p className="text-[10px] text-gray-400 dark:text-gray-500 italic px-3 py-4 text-center">No agent sessions yet</p>
-                                ) : (
-                                    sessions.map((session) => (
-                                        <div
-                                            key={session.id}
-                                            onClick={() => selectSession(session.id)}
-                                            className={`group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all duration-200 ${session.id === activeSessionId
-                                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800 shadow-sm font-bold'
-                                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
-                                                }`}
-                                        >
-                                            <span className="text-[11px] truncate flex-1">{session.title}</span>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    deleteSession(session.id);
-                                                }}
-                                                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-all rounded-md hover:bg-white dark:hover:bg-gray-800"
+                        {showHistory && (selectedAgent !== 'resume' && selectedAgent !== 'interview' && selectedAgent !== 'research' && selectedAgent !== 'coding') && (
+                            <aside className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col transition-all duration-300">
+                                <div className="p-4 border-b border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
+                                    <h2 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Agent History</h2>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
+                                    {sessions.length === 0 ? (
+                                        <p className="text-[10px] text-gray-400 dark:text-gray-500 italic px-3 py-4 text-center">No agent sessions yet</p>
+                                    ) : (
+                                        sessions.map((session) => (
+                                            <div
+                                                key={session.id}
+                                                onClick={() => selectSession(session.id)}
+                                                className={`group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all duration-200 ${session.id === activeSessionId
+                                                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800 shadow-sm font-bold'
+                                                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
+                                                    }`}
                                             >
-                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                        </aside>
+                                                <span className="text-[11px] truncate flex-1">{session.title}</span>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        deleteSession(session.id);
+                                                    }}
+                                                    className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-500 transition-all rounded-md hover:bg-white dark:hover:bg-gray-800"
+                                                >
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </aside>
+                        )}
 
                         {/* Chat Section */}
                         <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col relative">
-                            <div className="flex-grow overflow-hidden flex flex-col bg-gray-50/20 dark:bg-gray-900/10">
-                                <ChatWindow />
-                            </div>
-                            <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700">
-                                <ChatInput onSend={handleSend} disabled={isStreaming} />
-                            </div>
+                            {selectedAgent === 'job-apply' ? (
+                                <JobApplyAgentUI />
+                            ) : selectedAgent === 'resume' ? (
+                                <ResumeAgentUI />
+                            ) : selectedAgent === 'interview' ? (
+                                <InterviewAgentUI />
+                            ) : selectedAgent === 'research' ? (
+                                <ResearchAgentUI />
+                            ) : selectedAgent === 'coding' ? (
+                                <CodingAgentUI />
+                            ) : (
+                                <>
+                                    <div className="flex-grow overflow-hidden flex flex-col bg-gray-50/20 dark:bg-gray-900/10">
+                                        <ChatWindow />
+                                    </div>
+                                    <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-50 dark:border-gray-700">
+                                        <ChatInput onSend={handleSend} disabled={isStreaming} />
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

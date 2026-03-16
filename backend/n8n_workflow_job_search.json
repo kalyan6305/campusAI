@@ -1,0 +1,93 @@
+{
+  "name": "RealTimeJobSearch",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "job-search",
+        "options": {}
+      },
+      "id": "787e6d7e-0c7e-4c7e-8c7e-6e7e8c7e6e7e",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "job-search"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.adzuna.com/v1/api/jobs/in/search/1?app_id={{$node[\"Webhook Trigger\"].json[\"adzuna_id\"] || 'YOUR_ID'}}&app_key={{$node[\"Webhook Trigger\"].json[\"adzuna_key\"] || 'YOUR_KEY'}}&what={{$node[\"Webhook Trigger\"].json[\"role\"]}}&results_per_page=10",
+        "options": {}
+      },
+      "id": "898f7e8f-1d8f-5d8f-9d8f-7f8f9d8f7f8f",
+      "name": "HTTP Request Node",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "jobs",
+              "value": "={{$json[\"results\"].map(j => ({ title: j.title, company: j.company.display_name, location: j.location.display_name, apply_link: j.redirect_url, source: 'n8n (Adzuna)' }))}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "909g8f9g-2e9g-6e9g-0e9g-8g9g0e9g8g9g",
+      "name": "Data Processing Node",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "010h9g0h-3f0h-7f0h-1f0h-9h0h1f0h9h0h",
+      "name": "Response Node",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request Node": {
+      "main": [
+        [
+          {
+            "node": "Data Processing Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Processing Node": {
+      "main": [
+        [
+          {
+            "node": "Response Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

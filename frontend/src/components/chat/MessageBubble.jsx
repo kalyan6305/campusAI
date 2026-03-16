@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { speak, stopSpeaking } from '../../utils/tts';
 import useChatStore from '../../store/chatStore';
 
@@ -51,6 +53,74 @@ function getTheme(score) {
     if (score >= 85) return { bar: 'bg-green-500', text: 'text-green-700', light: 'bg-green-50', border: 'border-green-200', label: 'High Confidence' };
     if (score >= 70) return { bar: 'bg-blue-500', text: 'text-blue-700', light: 'bg-blue-50', border: 'border-blue-200', label: 'Good Confidence' };
     return { bar: 'bg-orange-500', text: 'text-orange-700', light: 'bg-orange-50', border: 'border-orange-200', label: 'Moderate Confidence' };
+}
+
+// ── Code Block Component with Syntax Highlighting ──────────────
+function CodeBlock({ node, inline, className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className || '');
+    const language = match ? match[1] : '';
+    const [isCopied, setIsCopied] = useState(false);
+
+    const handleCopyCode = () => {
+        const codeString = String(children).replace(/\n$/, '');
+        navigator.clipboard.writeText(codeString);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+    };
+
+    if (inline) {
+        return (
+            <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded text-pink-500 dark:text-pink-400 font-mono text-sm" {...props}>
+                {children}
+            </code>
+        );
+    }
+
+    return (
+        <div className="relative my-4 group/code rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm bg-gray-900">
+            <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                    {language || 'code'}
+                </span>
+                <button
+                    onClick={handleCopyCode}
+                    className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 hover:text-white transition-colors"
+                >
+                    {isCopied ? (
+                        <>
+                            <svg className="w-3 h-3 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="text-green-500">Copied!</span>
+                        </>
+                    ) : (
+                        <>
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <span>Copy</span>
+                        </>
+                    )}
+                </button>
+            </div>
+            <div className="overflow-x-auto">
+                <SyntaxHighlighter
+                    language={language}
+                    style={vscDarkPlus}
+                    customStyle={{
+                        margin: 0,
+                        padding: '1rem',
+                        fontSize: '13px',
+                        lineHeight: '1.6',
+                        backgroundColor: 'transparent',
+                    }}
+                    {...props}
+                >
+                    {String(children).replace(/\n$/, '')}
+                </SyntaxHighlighter>
+            </div>
+        </div>
+    );
 }
 
 // ── Confidence bottom bar (Perplexity-style) ──────────────────
@@ -298,7 +368,13 @@ export default function MessageBubble({ role, content, index }) {
                         </div>
                     ) : (
                         <div className={`prose prose-sm max-w-none ${isUser ? 'prose-invert' : 'prose-gray dark:prose-invert'}`}>
-                            <ReactMarkdown>{content}</ReactMarkdown>
+                            <ReactMarkdown
+                                components={{
+                                    code: CodeBlock
+                                }}
+                            >
+                                {content}
+                            </ReactMarkdown>
                         </div>
                     )}
 
