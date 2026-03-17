@@ -332,4 +332,15 @@ export const researchAPI = {
     },
 };
 
+// ── Study Planner Agent ───────────────────────────────────────────────────
+export const studyPlannerAPI = {
+    generate: (data) => api.post('/study-planner/generate', data),
+    listPlans: () => api.get('/study-planner/list-plans'),
+    getPlan: (sessionId) => api.get(`/study-planner/get-plan/${sessionId}`),
+    saveProgress: (sessionId, progress) => 
+        api.post('/study-planner/save-progress', { session_id: sessionId, progress }),
+    clearPlan: (sessionId) => api.delete(`/study-planner/clear-plan/${sessionId}`),
+    exportExcel: (sessionId) => api.post('/study-planner/export-excel', { session_id: sessionId }, { responseType: 'blob' }),
+};
+
 export default api;

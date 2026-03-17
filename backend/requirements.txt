@@ -45,3 +45,4 @@ openpyxl
 beautifulsoup4
 playwright
 python-jobspy
+cachetools

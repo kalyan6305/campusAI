@@ -4,6 +4,7 @@ from app.models.session import ChatSession
 from app.models.career import StudentCareerProfile
 from app.models.voice_session import VoiceSession
 from app.models.voice_message import VoiceMessage
+from app.models.study_plan import StudentStudyPlan
 from app.models.campus_session import CampusSession
 from app.models.campus_message import CampusMessage
 from app.models.tools_session import ToolsSession

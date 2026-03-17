@@ -27,6 +27,7 @@ from app.agents.research_agent import ResearchAgent
 from app.agents.career_agent import CareerAgent
 from app.agents.academic_agent import AcademicAgent
 from app.agents.coding_agent import CodingAgent
+from app.agents.study_planner_agent import StudyPlannerAgent
 from app.services.web_search_service import web_search_service
 from app.services.student_service import get_student_by_roll
 
@@ -45,7 +46,7 @@ def _get_models(module: str = "chat"):
         return MODEL_MAP[module]
         
     # Fallback for dynamic agent modes to 'agents' table
-    if module in ["career", "academic", "research", "coding", "analysis", "current_affairs"]:
+    if module in ["career", "academic", "research", "coding", "analysis", "current_affairs", "study_planner"]:
         return MODEL_MAP["agents"]
     
     # Fallback for campus sub-modules to 'campus' table
@@ -99,7 +100,7 @@ async def process_chat(
     mode = metadata.get("mode", "CHAT_MODE") if metadata else "CHAT_MODE"
     
     # Resolve module if it's an agent mode
-    if mode in ["career", "academic", "research", "coding", "analysis", "current_affairs"]:
+    if mode in ["career", "academic", "research", "coding", "analysis", "current_affairs", "study_planner"]:
         module = "agents"
     
     # Map academics module to academic agent mode
@@ -147,6 +148,9 @@ async def process_chat(
         elif mode == "coding":
             coding_agent = CodingAgent()
             reply_text = await coding_agent.generate_response(user_message)
+        elif mode == "study_planner":
+            study_agent = StudyPlannerAgent()
+            reply_text = await study_agent.generate_response(user_message)
         else:
             research_agent = ResearchAgent()
             reply_text = await research_agent.research(user_message, context_str)
@@ -189,7 +193,7 @@ async def process_chat_stream(
     mode = metadata.get("mode", "CHAT_MODE") if metadata else "CHAT_MODE"
     
     # If mode is an agent, use 'agents' module table
-    if mode in ["career", "academic", "research", "coding", "analysis", "current_affairs"]:
+    if mode in ["career", "academic", "research", "coding", "analysis", "current_affairs", "study_planner"]:
         module = "agents"
 
     # Map academics module to academic agent mode
@@ -267,6 +271,11 @@ async def process_chat_stream(
         elif mode == "coding":
             coding_agent = CodingAgent()
             async for token in coding_agent.stream_response(user_message):
+                full_reply.append(token)
+                yield {"mode": mode, "token": token}
+        elif mode == "study_planner":
+            study_agent = StudyPlannerAgent()
+            async for token in study_agent.stream_response(user_message):
                 full_reply.append(token)
                 yield {"mode": mode, "token": token}
         else:
