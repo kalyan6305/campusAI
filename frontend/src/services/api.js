@@ -189,18 +189,17 @@ export const voiceAPI = {
 
 // ── Job Apply ─────────────────────────────────────────
 export const jobApplyAPI = {
-    searchJobs: async (role, location = 'remote') => {
+    searchJobs: async (role, user_profile, location = 'remote') => {
         const token = localStorage.getItem('access_token');
-        const formData = new FormData();
-        formData.append('role', role);
-        formData.append('location', location);
+        const payload = { role, user_profile, location };
 
         return fetch(`${API_BASE}/job-apply/search`, {
             method: 'POST',
             headers: {
+                'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             },
-            body: formData,
+            body: JSON.stringify(payload),
         });
     },
     process: async (file, jobData) => {

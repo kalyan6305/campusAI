@@ -6,7 +6,6 @@ import useChatStore from '../store/chatStore';
 import JobApplyAgentUI from '../components/agents/JobApplyAgentUI';
 import ResumeAgentUI from '../components/agents/ResumeAgentUI';
 import InterviewAgentUI from '../components/agents/InterviewAgentUI';
-import ResearchAgentUI from '../components/agents/ResearchAgentUI';
 import CodingAgentUI from '../components/agents/CodingAgentUI';
 
 const AgentsPage = () => {
@@ -22,9 +21,7 @@ const AgentsPage = () => {
 
     const agents = [
         { id: 'job-apply', name: 'Job Assistant Agent', icon: '🚀', description: 'Find relevant jobs for seekers & graduates. Search by role, filter by location, and get direct application links.', color: 'blue' },
-        { id: 'career', name: 'Career Agent', icon: '💼', description: 'Personalized career advice & profiling.', color: 'indigo' },
         { id: 'academic', name: 'Academics Agent', icon: '📖', description: 'Syllabus-based expert tutoring.', color: 'purple' },
-        { id: 'research', name: 'Research Agent', icon: '🔬', description: 'Explore research topics, analyze papers, generate project ideas, and get structured research insights.', color: 'emerald' },
         { id: 'coding', name: 'Coding Agent', icon: '💻', description: 'Generate code, debug programs, and practice coding with an AI-powered coding workspace.', color: 'amber' },
         { id: 'interview', name: 'Interview Prep Agent', icon: '🎯', description: 'Practice role-specific interview questions and get expert feedback to ace your next job.', color: 'blue' },
         { id: 'resume', name: 'Resume Agent', icon: '📄', description: 'Optimize your resume for a specific job role by comparing it with a job description and generating a tailored version.', color: 'rose' },
@@ -111,7 +108,7 @@ const AgentsPage = () => {
                             </div>
 
                             {/* History toggle — only show if sidebar is applicable */}
-                            {(selectedAgent !== 'resume' && selectedAgent !== 'interview' && selectedAgent !== 'research') && (
+                            {(selectedAgent !== 'resume' && selectedAgent !== 'interview') && (
                                 <button
                                     onClick={() => setShowHistory(prev => !prev)}
                                     className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-100 dark:hover:border-blue-800 shadow-sm transition-all text-[10px] font-bold uppercase tracking-wider"
@@ -131,7 +128,7 @@ const AgentsPage = () => {
 
                     <div className="flex-grow flex gap-6 min-w-0 h-full overflow-hidden">
                         {/* Agent-Specific History Sidebar */}
-                        {showHistory && (selectedAgent !== 'resume' && selectedAgent !== 'interview' && selectedAgent !== 'research' && selectedAgent !== 'coding') && (
+                        {showHistory && (selectedAgent !== 'resume' && selectedAgent !== 'interview' && selectedAgent !== 'coding') && (
                             <aside className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col transition-all duration-300">
                                 <div className="p-4 border-b border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
                                     <h2 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Agent History</h2>
@@ -176,8 +173,6 @@ const AgentsPage = () => {
                                 <ResumeAgentUI />
                             ) : selectedAgent === 'interview' ? (
                                 <InterviewAgentUI />
-                            ) : selectedAgent === 'research' ? (
-                                <ResearchAgentUI />
                             ) : selectedAgent === 'coding' ? (
                                 <CodingAgentUI />
                             ) : (

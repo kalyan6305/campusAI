@@ -17,15 +17,28 @@ from app.agents.job_assistant_agent import JobAssistantAgent
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/job-apply", tags=["Job Assistant"])
 
+from pydantic import BaseModel
+from typing import Dict, Any, List
+
+class JobSearchRequest(BaseModel):
+    role: str
+    user_profile: Dict[str, Any]
+    location: Optional[str] = "remote"
+
 @router.post("/search")
 async def search_jobs(
-    role: str = Form(...),
-    location: str = Form("remote"),
+    request: JobSearchRequest,
     current_user: User = Depends(get_current_user)
 ):
     """Search for jobs related to the selected role."""
     agent = JobAssistantAgent()
-    jobs = await agent.finder.search_jobs(role, location)
+    jobs = await agent.finder.search_jobs(
+        role=request.role, 
+        user_profile=request.user_profile, 
+        location=request.location
+    )
+    if not jobs:
+        return {"status": "ERROR", "message": "No jobs found for this role.", "jobs": []}
     return {"status": "SUCCESS", "jobs": jobs}
 
 @router.post("/process")

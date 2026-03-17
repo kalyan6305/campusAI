@@ -81,74 +81,69 @@ def is_english(text: str) -> bool:
     return True
 
 # --- MODULE LEVEL FETCHERS ---
+import time
 
-async def fetch_n8n_jobs(role: str, location: str) -> List[Dict[str, Any]]:
-    try:
-        url = "http://localhost:5678/webhook/job-search"
-        payload = {"role": role, "location": location}
-        res = await asyncio.to_thread(requests.post, url, json=payload, timeout=8)
-        if res.status_code == 200:
-            data = res.json()
-            if isinstance(data, list): return data
-            return data.get('jobs', [])
-    except Exception as e:
-        logger.warning(f"n8n search failed: {e}")
-    return []
+# --- CACHE SYSTEM ---
+class SearchCache:
+    def __init__(self, ttl_seconds: int = 600):
+        self.cache = {}
+        self.ttl = ttl_seconds
 
-async def fetch_arbeitnow(role: str) -> List[Dict[str, Any]]:
+    def get(self, key: str) -> List[Dict[str, Any]] | None:
+        if key in self.cache:
+            data, timestamp = self.cache[key]
+            if time.time() - timestamp < self.ttl:
+                return data
+            del self.cache[key]
+        return None
+
+    def set(self, key: str, data: List[Dict[str, Any]]):
+        self.cache[key] = (data, time.time())
+
+_job_search_cache = SearchCache()
+
+# --- REVISED FETCHERS ---
+
+async def fetch_adzuna(role: str, settings: Any) -> List[Dict[str, Any]]:
+    if not settings.ADZUNA_APP_ID or not settings.ADZUNA_APP_KEY:
+        logger.warning("Adzuna credentials missing.")
+        return []
     try:
-        # Use search parameter to limit results to the role
-        q = role.replace(' ', '+')
-        res = await asyncio.to_thread(requests.get, f'https://www.arbeitnow.com/api/job-board-api?search={q}', timeout=8)
+        url = "https://api.adzuna.com/v1/api/jobs/in/search/1"
+        params = {
+            "app_id": settings.ADZUNA_APP_ID,
+            "app_key": settings.ADZUNA_APP_KEY,
+            "what": role,
+            "results_per_page": 10
+        }
+        res = await asyncio.to_thread(requests.get, url, params=params, timeout=8)
         if res.status_code == 200:
-            data = res.json().get('data', [])
-            # Return only top 5 from Arbeitnow to avoid flooding
+            data = res.json().get('results', [])
             return [{
                 "title": j.get('title', ''),
-                "company": j.get('company_name', ''),
-                "location": j.get('location', '') + (" (Remote)" if j.get('remote') else ""),
+                "company": j.get('company', {}).get('display_name', '') if isinstance(j.get('company'), dict) else str(j.get('company', '')),
+                "location": j.get('location', {}).get('display_name', '') if isinstance(j.get('location'), dict) else str(j.get('location', '')),
                 "description": re.sub('<[^<]+?>', '', j.get('description', '')).strip(),
-                "apply_link": j.get('url', ''),
-                "source": "Arbeitnow"
-            } for j in data[:5]]
-    except Exception as e:
-        logger.warning(f"Arbeitnow failed: {e}")
-    return []
-
-async def fetch_remotive(role: str) -> List[Dict[str, Any]]:
-    try:
-        q = role.replace(' ', '%20')
-        res = await asyncio.to_thread(requests.get, f'https://remotive.com/api/remote-jobs?search={q}&limit=20', timeout=8)
-        if res.status_code == 200:
-            data = res.json().get('jobs', [])
-            return [{
-                "title": j.get('title', ''),
-                "company": j.get('company_name', ''),
-                "location": j.get('candidate_required_location', 'Remote'),
-                "description": re.sub('<[^<]+?>', '', j.get('description', '')).strip(),
-                "apply_link": j.get('url', ''),
-                "source": "Remotive"
+                "apply_link": j.get('redirect_url', ''),
+                "source": "adzuna"
             } for j in data]
     except Exception as e:
-        logger.warning(f"Remotive failed: {e}")
+        logger.warning(f"Adzuna failed: {e}")
     return []
 
-async def fetch_jobspy_jobs(role: str, location: str) -> List[Dict[str, Any]]:
+async def fetch_jobspy_jobs(role: str, location: str = "India") -> List[Dict[str, Any]]:
     try:
         from jobspy import scrape_jobs
         
         def run_spy():
             try:
                 search_loc = location if location else "India"
-                # Use only the most reliable sites if others fail
-                # Sites requested: LinkedIn, Indeed, Glassdoor, Google
-                # Valid names are usually lowercase: linkedin, indeed, glassdoor, google
                 return scrape_jobs(
                     site_name=["linkedin", "indeed"],
                     search_term=role,
                     location=search_loc,
-                    results_wanted=50,
-                    country_indeed='india' if any(w in search_loc.lower() for w in ['india', 'hyderabad', 'bangalore']) else 'usa'
+                    results_wanted=10,
+                    country_indeed='india' if 'india' in search_loc.lower() else 'usa'
                 )
             except Exception as inner_e:
                 logger.error(f"JobSpy internal error: {inner_e}")
@@ -160,179 +155,39 @@ async def fetch_jobspy_jobs(role: str, location: str) -> List[Dict[str, Any]]:
             
         results = []
         for _, row in jobs_df.iterrows():
-            site = str(row.get('site', 'web')).lower()
-            # Clean up source labels
-            source_label = "LinkedIn" if "linkedin" in site else "Indeed" if "indeed" in site else f"JobSource ({site})"
             results.append({
-                "title": str(row.get('title', 'Unknown Title')),
-                "company": str(row.get('company', 'Unknown Company')),
-                "location": str(row.get('location', 'India')),
-                "description": str(row.get('description', ''))[:1000],
+                "title": str(row.get('title', '')),
+                "company": str(row.get('company', '')),
+                "location": str(row.get('location', '')),
+                "description": str(row.get('description', '')),
                 "apply_link": str(row.get('job_url', '')),
-                "source": source_label
+                "source": "jobspy"
             })
-        logger.info(f"JobSpy found {len(results)} jobs targets")
         return results
     except Exception as e:
         logger.warning(f"JobSpy fetch failed: {e}")
     return []
 
-async def fetch_mnc_career_pages(role: str, location: str) -> List[Dict[str, Any]]:
-    try:
-        search_loc = location if location else "India"
-        query = f"{role} careers jobs site:infosys.com OR site:tcs.com OR site:wipro.com OR site:hcltech.com OR site:accenture.com"
-        def run_search():
-            with DDGS() as ddgs:  # Uses the correctly imported DDGS from top of file
-                try:
-                    return list(ddgs.text(query, max_results=20))
-                except: return []
-        results = await asyncio.to_thread(run_search)
-        return [{
-            "title": r['title'],
-            "company": "MNC Careers",
-            "location": search_loc,
-            "description": r['body'],
-            "apply_link": r['href'],
-            "source": "Career Portal"
-        } for r in results]
-    except Exception as e:
-        logger.warning(f"MNC search failed: {e}")
-    return []
-
-async def fetch_indeed_india(role: str, location: str) -> List[Dict[str, Any]]:
-    """Fetch jobs specifically from in.indeed.com using targeted search queries.
-    Since Indeed uses JS rendering, we use DuckDuckGo to index their pages."""
-    try:
-        from duckduckgo_search import DDGS
-        search_loc = location if location else "India"
-        
-        queries = [
-            f'{role} jobs in {search_loc} site:in.indeed.com',
-            f'{role} hiring {search_loc} indeed.com/jobs',
-            f'"{role}" job openings in {search_loc} -site:en.indeed.com site:in.indeed.com',
-            f'indeed {role} {search_loc} apply now',
-        ]
-        
-        all_results = []
-        
-        def run_search(q: str):
-            with DDGS() as ddgs:
-                try:
-                    return list(ddgs.text(q, max_results=15))
-                except:
-                    return []
-        
-        for q in queries:
-            results = await asyncio.to_thread(run_search, q)
-            for r in results:
-                href = r['href'].lower()
-                # Only include results from in.indeed.com / indeed.com
-                if 'indeed.com' not in href:
-                    continue
-                all_results.append({
-                    "title": r['title'],
-                    "company": "Indeed Listing",
-                    "location": search_loc,
-                    "description": r['body'],
-                    "apply_link": r['href'],
-                    "source": "Indeed"
-                })
-        
-        logger.info(f"Indeed India found {len(all_results)} job links")
-        return all_results
-    except Exception as e:
-        logger.warning(f"Indeed India search failed: {e}")
-    return []
-
-async def fetch_naukri_direct(role: str, location: str) -> List[Dict[str, Any]]:
-    try:
-        search_loc = location if location else "India"
-        query = f'site:naukri.com "{role}" jobs in {search_loc}'
-        def run_search():
-            with DDGS() as ddgs:
-                try: return list(ddgs.text(query, max_results=15))
-                except: return []
-        results = await asyncio.to_thread(run_search)
-        return [{
-            "title": r['title'],
-            "company": "Naukri Listing",
-            "location": search_loc,
-            "description": r['body'],
-            "apply_link": r['href'],
-            "source": "Naukri"
-        } for r in results]
-    except Exception as e:
-        logger.warning(f"Naukri direct search failed: {e}")
-    return []
-
-async def fetch_adzuna(role: str, settings: Any) -> List[Dict[str, Any]]:
-    if not settings.ADZUNA_APP_ID or not settings.ADZUNA_APP_KEY:
-        return []
-    try:
-        url = "https://api.adzuna.com/v1/api/jobs/in/search/1"
-        params = {"app_id": settings.ADZUNA_APP_ID, "app_key": settings.ADZUNA_APP_KEY, "what": role, "results_per_page": 20}
-        res = await asyncio.to_thread(requests.get, url, params=params, timeout=8)
-        if res.status_code == 200:
-            data = res.json().get('results', [])
-            return [{
-                "title": j.get('title', ''),
-                "company": j.get('company', {}).get('display_name', ''),
-                "location": j.get('location', {}).get('display_name', ''),
-                "description": re.sub('<[^<]+?>', '', j.get('description', '')).strip(),
-                "apply_link": j.get('redirect_url', ''),
-                "source": "Adzuna"
-            } for j in data]
-    except Exception as e:
-        logger.warning(f"Adzuna failed: {e}")
-    return []
-
 async def fetch_web_search_jobs(role: str, location: str) -> List[Dict[str, Any]]:
     try:
         search_loc = location if location else "India"
-        # Relaxed queries without exact-match quotes to allow for browser-style flexibility
-        queries = [
-            f'{role} job openings site:linkedin.com in {search_loc}',
-            f'{role} hiring site:naukri.com in {search_loc}',
-            f'{role} vacancies site:indeed.com in {search_loc}',
-            f'{role} recruiter careers portal in {search_loc}',
-            f'{role} hiring official link in {search_loc}',
-            f'{role} careers site:lever.co OR site:greenhouse.io',
-            f'apply for {role} in {search_loc}',
-            f'latest job openings for {role}'
-        ]
+        query = f'{role} job openings in {search_loc} apply link'
         
-        all_results = []
-        def run_search(q):
+        def run_search():
             with DDGS() as ddgs:
                 try:
-                    # Request significantly more results for deep search
-                    return list(ddgs.text(q, max_results=25))
+                    return list(ddgs.text(query, max_results=10))
                 except: return []
         
-        for q in queries:
-            results = await asyncio.to_thread(run_search, q)
-            # Add site info to source if possible
-            for r in results:
-                href = r['href'].lower()
-                source = "Web Search"
-                if "naukri.com" in href: source = "Naukri"
-                elif "linkedin.com" in href: source = "LinkedIn"
-                elif "indeed.com" in href: source = "Indeed"
-                elif "foundit.in" in href or "monsterindia.com" in href: source = "Foundit/Monster"
-                elif "hirist.com" in href: source = "Hirist"
-                elif "wellfound.com" in href or "angel.co" in href: source = "Wellfound"
-                
-                all_results.append({
-                    "title": r['title'],
-                    "company": "External Listing",
-                    "location": search_loc,
-                    "description": r['body'],
-                    "apply_link": r['href'],
-                    "source": source
-                })
-        
-        logger.info(f"Web Search found {len(all_results)} jobs targets")
-        return all_results
+        results = await asyncio.to_thread(run_search)
+        return [{
+            "title": r.get('title', 'Unknown'),
+            "company": "External",
+            "location": search_loc,
+            "description": r.get('body', ''),
+            "apply_link": r.get('href', ''),
+            "source": "web"
+        } for r in results]
     except Exception as e:
         logger.warning(f"Web search failed: {e}")
     return []
@@ -340,192 +195,109 @@ async def fetch_web_search_jobs(role: str, location: str) -> List[Dict[str, Any]
 # --- MAIN AGENT CLASSES ---
 
 class JobFinderAgent:
-    """Agent responsible for finding job listings from various sources."""
+    """Agent responsible for finding and analyzing job listings."""
     
     def __init__(self):
         self.llm = get_llm_provider()
         self.settings = get_settings()
 
-    async def search_jobs(self, role: str, location: str = "") -> List[Dict[str, str]]:
-        """Search for real job opportunities with maximum reliability and source diversity."""
-        all_raw_jobs = []
-        final_jobs = []
+    async def search_jobs(self, role: str, user_profile: Dict[str, Any], location: str = "") -> List[Dict[str, Any]]:
+        """Search for jobs with caching, sequential fallback, and AI enrichment."""
+        user_level = user_profile.get('level', 'fresher')
+        cache_key = f"{role}_{user_level}".lower().replace(" ", "_")
         
-        # 0. Query Relaxation (Broaden role if too specific)
-        search_role = role
-        if "associative" in role.lower():
-            search_role = role.replace("associative", "associate")
-            logger.info(f"Relaxed role from '{role}' to '{search_role}'")
+        # 1. Check Cache
+        cached_results = _job_search_cache.get(cache_key)
+        if cached_results:
+            logger.info(f"Returning cached results for {cache_key}")
+            return cached_results
 
+        # 2. Sequential Fallback Chain
+        jobs = await fetch_adzuna(role, self.settings)
+        if not jobs:
+            logger.info("Adzuna empty, trying JobSpy...")
+            jobs = await fetch_jobspy_jobs(role, location)
+        
+        if not jobs:
+            logger.info("JobSpy empty, trying Web Search...")
+            jobs = await fetch_web_search_jobs(role, location)
+
+        if not jobs:
+            return []
+
+        # 3. AI Analysis & Enrichment (Batch)
+        candidates = jobs[:8]
+        analysis_data = []
+        for idx, j in enumerate(candidates):
+            analysis_data.append({
+                "index": idx,
+                "title": j.get('title', 'Unknown'),
+                "company": j.get('company', 'Unknown'),
+                "description": (j.get('description') or '')[:200]
+            })
+
+        prompt = f"""
+        Analyze these job listings for a candidate with this profile: {json.dumps(user_profile)}.
+        Role: {role}
+        
+        Jobs: {json.dumps(analysis_data)}
+        
+        For each job index, provide:
+        - ai_summary (one concise sentence)
+        - match_score (0-100 based on skills/level)
+        - tips (one specific advice for applying)
+        
+        Return ONLY a JSON array indexed by position: [{{"index": 0, "ai_summary": "...", "match_score": 85, "tips": "..."}}, ...]
+        No other text.
+        """
+        
+        enriched_jobs = []
         try:
-            # 1. Concurrent Collection
-            tasks = [
-                fetch_web_search_jobs(search_role, location),
-                fetch_jobspy_jobs(search_role, location),
-                fetch_indeed_india(search_role, location),  # Dedicated Indeed India
-                fetch_naukri_direct(search_role, location),
-                fetch_mnc_career_pages(search_role, location),
-                fetch_arbeitnow(search_role),
-                fetch_remotive(search_role),
-                fetch_adzuna(search_role, self.settings),
-                fetch_n8n_jobs(search_role, location)
-            ]
+            ai_res = await self.llm.generate([{"role": "user", "content": prompt}])
+            if not ai_res:
+                raise ValueError("AI returned empty response")
             
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            
-            # 2. Heuristic Filtering & Metadata Cleanup
-            seen_links = set()
-            for idx, res_list in enumerate(results):
-                source_name = ["Web", "JobSpy", "Indeed", "Naukri", "MNC", "Arbeitnow", "Remotive", "Adzuna", "n8n"][idx]
+            # Simple extractor for json in case of markdown wrapping
+            start = ai_res.find('[')
+            end = ai_res.rfind(']') + 1
+            if start != -1 and end != -1:
+                json_str = ai_res[start:end]
+                try:
+                    ai_analysis = json.loads(json_str)
+                except json.JSONDecodeError:
+                    logger.error(f"Failed to decode AI JSON: {json_str}")
+                    raise
                 
-                if not isinstance(res_list, list):
-                    logger.error(f"Source {source_name} FAILED: {res_list}")
-                    continue
+                analysis_map = {item['index']: item for item in ai_analysis if isinstance(item, dict) and 'index' in item}
                 
-                logger.info(f"Source {source_name} returned {len(res_list)} potential jobs.")
-                
-                for j in res_list:
-                    link = j.get('apply_link', '') or ''
-                    raw_title = j.get('title', '') or ''
-                    raw_company = j.get('company', '') or ''
-                    raw_desc = j.get('description', '') or ''
-                    
-                    link_lower = link.lower()
-                    title_lower = raw_title.lower()
-                    
-                    # A. Deduplication (Normalized URL)
-                    norm_link = link_lower.split('?')[0].rstrip('/')
-                    if not norm_link or norm_link in seen_links: continue
-                    
-                    # B. Domain Blacklist (only true spam sites)
-                    if any(domain in link_lower for domain in EXCLUDE_DOMAINS): continue
-                    
-                    # C. Keyword Blacklist (Spam/Non-job content in title only)
-                    if any(kw in title_lower for kw in EXCLUDE_KEYWORDS): continue
-                    
-                    # D. Language Detection — block non-Latin scripts in title only
-                    if has_non_latin_script(raw_title): continue
-                    if raw_company and has_non_latin_script(raw_company): continue
-                    if not is_english(raw_title): continue
-
-                    j.setdefault('company', 'Unknown Company')
-                    j.setdefault('location', location or 'India')
-                    j['description'] = raw_desc[:1000]
-                    
-                    all_raw_jobs.append(j)
-                    seen_links.add(norm_link)
-            
-            if not all_raw_jobs:
-                logger.info("No valid jobs found after strict filtering.")
-                return []
-
-            # 3. Source Diversification for AI Ranking
-            logger.info(f"Filtered down to {len(all_raw_jobs)} unique jobs.")
-            
-            diversified = []
-            source_groups = {}
-            for j in all_raw_jobs:
-                s = j.get('source', 'Web Search')
-                if s not in source_groups: source_groups[s] = []
-                source_groups[s].append(j)
-            
-            # Round-robin selection for initial pool
-            any_added = True
-            idx = 0
-            while len(diversified) < 100 and any_added:
-                any_added = False
-                for s in source_groups:
-                    if idx < len(source_groups[s]):
-                        diversified.append(source_groups[s][idx])
-                        any_added = True
-                idx += 1
-            
-            if not diversified:
-                logger.info("No candidates after diversification.")
-                return []
-
-            # 5. AI Verification & Ranking
-            # Limit to 50 for the prompt to save tokens while keeping volume high
-            prompt_candidates = []
-            for idx, c in enumerate(diversified[:50]):
-                prompt_candidates.append({
-                    "id": idx, 
-                    "title": c['title'], 
-                    "company": c['company'], 
-                    "source": c['source'], 
-                    "desc": c['description'][:200]
-                })
-
-            prompt = f"""
-            Select the top 40 most relevant and valid job opportunities for: "{role}".
-            
-            PRIORITY ORDER:
-            1. Direct application links from LinkedIn, Indeed, and Naukri.
-            2. Direct Company Career Portals (TCS, Infosys, etc).
-            
-            Rules:
-            - Return up to 40 relevant IDs.
-            - Ensure the job title and location match: {role} in {location}.
-            - Exclude obvious non-job spam.
-            
-            Data: {json.dumps(prompt_candidates)}
-            
-            Return ONLY a JSON array of the most relevant IDs.
-            """
-            
-            try:
-                ai_response = await self.llm.generate([{"role": "user", "content": prompt}])
-                cleaned = ai_response.strip()
-                match = re.search(r'\[.*\]', cleaned, re.DOTALL)
-                if match:
-                    cleaned = match.group(0)
-                
-                relevant_ids = json.loads(cleaned)
-                for r_id in relevant_ids:
-                    if isinstance(r_id, int) and 0 <= r_id < len(diversified):
-                        c = diversified[r_id]
-                        final_jobs.append({
-                            "title": c["title"], "company": c["company"], "location": c["location"][:60],
-                            "description": c["description"][:400] + "...", 
-                            "link": c["apply_link"], 
-                            "source": c["source"]
-                        })
-            except Exception as e:
-                logger.error(f"AI ranking failed or returned invalid format: {e}")
-                # Fallback to balanced selection - increased volume
-                for c in diversified[:40]:
-                    final_jobs.append({
-                        "title": c["title"], "company": c["company"], "location": c["location"][:60],
-                        "description": c["description"][:400] + "...", 
-                        "link": c["apply_link"], 
-                        "source": c["source"]
+                for idx, j in enumerate(candidates):
+                    analysis = analysis_map.get(idx, {})
+                    enriched_jobs.append({
+                        "index": idx,
+                        **j,
+                        "ai_summary": analysis.get('ai_summary', "No summary available."),
+                        "match_score": analysis.get('match_score', 50),
+                        "tips": analysis.get('tips', "Follow standard application procedure.")
                     })
+            else:
+                logger.error(f"AI returned invalid format: {ai_res}")
+                raise ValueError("No JSON block found")
 
         except Exception as e:
-            logger.error(f"Search pipeline failed: {e}")
-            
-        # 6. Fallback Search (If still low on results, try a direct wide-net search)
-        if len(final_jobs) < 10:
-            logger.info("Entering Fallback Broad Search...")
-            with DDGS() as ddgs:
-                try:
-                    fallback_query = f"{search_role} hiring in {location} apply link"
-                    results = list(ddgs.text(fallback_query, max_results=20))
-                    for r in results:
-                        if not any(f['link'] == r['href'] for f in final_jobs):
-                            final_jobs.append({
-                                "title": r['title'],
-                                "company": "Direct Result",
-                                "location": location or "India",
-                                "description": r['body'],
-                                "link": r['href'],
-                                "source": "Web Search (Direct)"
-                            })
-                except Exception as fe:
-                    logger.warning(f"Fallback search failed: {fe}")
+            import traceback
+            logger.error(f"AI Enrichment failed: {e}\n{traceback.format_exc()}")
+            # Fallback without AI enrichment
+            for j in candidates:
+                enriched_jobs.append({
+                    **j,
+                    "ai_summary": "AI analysis unavailable.",
+                    "match_score": 0,
+                    "tips": "Check job description for details."
+                })
 
-        logger.info(f"Returning {len(final_jobs)} jobs for {role}")
-        return final_jobs[:50]
+        # 4. Save to Cache
+        _job_search_cache.set(cache_key, enriched_jobs)
+        return enriched_jobs
 
 class JobDescriptionExtractor:
     def __init__(self):

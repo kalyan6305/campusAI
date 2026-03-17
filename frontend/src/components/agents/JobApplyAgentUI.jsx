@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { jobApplyAPI } from '../../services/api';
+import useAuthStore from '../../store/authStore';
 
 const JobApplyAgentUI = () => {
     // Step 1: Search State
@@ -8,6 +9,7 @@ const JobApplyAgentUI = () => {
     const [isSearching, setIsSearching] = useState(false);
     const [jobs, setJobs] = useState([]);
     const [hasSearched, setHasSearched] = useState(false);
+    const { user } = useAuthStore();
     
     // Step 2 & 3: Selection & Upload State
     const [selectedJob, setSelectedJob] = useState(null);
@@ -22,18 +24,30 @@ const JobApplyAgentUI = () => {
         if (!role) return;
         setIsSearching(true);
         setJobs([]);
+        
+        // Mock user profile if not fully available in store
+        const userProfile = {
+            level: "fresher", // Default level
+            degree: "B.Tech", // Default degree
+            skills: ["Python", "JavaScript", "React"] // Default skills
+        };
+
         try {
-            const res = await jobApplyAPI.searchJobs(role, "");
+            const res = await jobApplyAPI.searchJobs(role, userProfile, "");
             const data = await res.json();
             setHasSearched(true);
-            if (data.status === 'SUCCESS' && data.jobs && data.jobs.length > 0) {
+            
+            if (data.status === 'SUCCESS' && data.jobs) {
                 setJobs(data.jobs);
             } else {
                 setJobs([]);
+                if (data.status === 'ERROR') {
+                    console.warn('Search API returned error:', data.message);
+                }
             }
         } catch (error) {
             console.error(error);
-            alert('Search failed.');
+            alert('Search failed. Please ensure the backend is running.');
         } finally {
             setIsSearching(false);
         }
@@ -127,21 +141,8 @@ const JobApplyAgentUI = () => {
                             <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Job Assistant</h2>
                             <p className="text-gray-500 text-sm mt-2 font-medium">Empowering job seekers and graduates to find relevant opportunities.</p>
                             
-                            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
-                                <div className="p-3 bg-blue-50/50 dark:bg-blue-900/20 rounded-2xl border border-blue-100/50 dark:border-blue-800/50">
-                                    <span className="text-lg block mb-1">🔍</span>
-                                    <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Search by Role</span>
-                                </div>
-                                <div className="p-3 bg-purple-50/50 dark:bg-purple-900/20 rounded-2xl border border-purple-100/50 dark:border-purple-800/50">
-                                    <span className="text-lg block mb-1">🔗</span>
-                                    <span className="text-[10px] font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wider">Direct Links</span>
-                                </div>
-                                <div className="p-3 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100/50 dark:border-emerald-800/50">
-                                    <span className="text-lg block mb-1">⭐️</span>
-                                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Best Matches</span>
-                                </div>
-                            </div>
                         </div>
+
                         
                         <div className="flex flex-col gap-2 mb-8">
                             <div className="flex flex-col md:flex-row gap-4">
@@ -196,9 +197,9 @@ const JobApplyAgentUI = () => {
                                                         <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 px-2 py-0.5 rounded-md uppercase tracking-widest">{job.source || 'Web Search'}</span>
                                                     </div>
                                                 </div>
-                                                {job.link && (
+                                                {job.apply_link && (
                                                     <a 
-                                                        href={job.link}
+                                                        href={job.apply_link}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         onClick={(e) => e.stopPropagation()}
