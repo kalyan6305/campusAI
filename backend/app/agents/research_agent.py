@@ -208,11 +208,11 @@ class ResearchAgent:
         if context:
             full_context += f"Academic/Document Context:\n{context}\n\n"
         if web_context:
-            full_context += f"Web Search Context:\n{web_context}\n\n"
+            full_context += f"Initial Web Search Context:\n{web_context}\n\n"
 
         messages = [
             {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": f"Context for Research:\n{full_context}\n\nQuery: {query}" if full_context else query}
+            {"role": "user", "content": f"CURRENT GOAL: {query}\n\nContext:\n{full_context}" if full_context else f"CURRENT GOAL: {query}"}
         ]
 
         try:

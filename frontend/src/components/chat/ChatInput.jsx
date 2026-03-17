@@ -75,7 +75,7 @@ export default function ChatInput({ onSend, disabled, voiceState, onVoiceToggle 
 
     return (
         <form onSubmit={handleSubmit} className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
-            <div className="flex items-end gap-2 max-w-4xl mx-auto bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-2 transition-all focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 focus-within:bg-white dark:focus-within:bg-gray-800">
+            <div className="flex items-end gap-2 max-w-4xl mx-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-2 shadow-md transition-all focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30">
                 {/* Upload Placeholder */}
                 <button
                     type="button"

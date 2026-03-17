@@ -213,7 +213,7 @@ async def process_chat_stream(
     # --- Web Search for Tools Mode ---
     web_context = ""
     search_results = []
-    if mode == "tools":
+    if mode in ["tools", "social"]:
         # Let's signify search is happening
         yield {"mode": mode, "status": "SEARCHING", "token": ""}
         search_data = await web_search_service.search(user_message)
@@ -286,6 +286,9 @@ async def process_chat_stream(
         role="assistant",
         content=reply_text,
     )
+    if hasattr(assistant_msg, 'meta_data') and mode in ["tools", "social"] and search_results:
+        assistant_msg.meta_data = {"sources": search_results, "platform_links": platform_links}
+        
     db.add(assistant_msg)
 
     if len(session.messages) <= 2:

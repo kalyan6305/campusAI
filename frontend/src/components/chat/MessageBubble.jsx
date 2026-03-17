@@ -336,9 +336,9 @@ export default function MessageBubble({ role, content, index }) {
             {/* Bubble + Confidence card stacked */}
             <div className={`flex flex-col gap-2 max-w-[85%] ${isUser ? 'items-end' : 'items-start'}`}>
                 <div
-                    className={`relative rounded-2xl px-4 py-2.5 shadow-sm text-sm leading-relaxed ${isUser
-                        ? 'bg-blue-600 dark:bg-blue-700 text-white rounded-tr-none'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700'
+                    className={`relative rounded-2xl px-5 py-3 shadow-sm text-[15px] leading-relaxed font-sans ${isUser
+                        ? 'bg-blue-600 text-white rounded-tr-none'
+                        : 'bg-[#F3F4F6] dark:bg-gray-800 text-slate-800 dark:text-gray-100 rounded-tl-none border border-gray-200 dark:border-gray-700 font-serif'
                         }`}
                 >
                     {isEditing ? (

@@ -45,10 +45,16 @@
 
   /* Custom scrollbar for specific containers */
   .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
+    width: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-gray-200 dark:bg-gray-700 rounded-full;
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full border-2 border-transparent bg-clip-padding transition-colors;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
   }
 
   /* Voice AI — Orb gradient */

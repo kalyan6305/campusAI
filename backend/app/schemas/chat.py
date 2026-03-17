@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 class MessageSchema(BaseModel):
     role: str = Field(pattern="^(user|assistant|system)$")
     content: str = Field(min_length=1)
+    meta_data: dict | None = None
 
 
 class ChatRequest(BaseModel):

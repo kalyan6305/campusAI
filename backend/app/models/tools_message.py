@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Text
+from sqlalchemy import DateTime, Enum, ForeignKey, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -30,6 +30,7 @@ class ToolsMessage(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
     )
+    meta_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     # Relationships
     session = relationship("ToolsSession", back_populates="messages")

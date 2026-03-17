@@ -14,14 +14,14 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.db.base import Base
 from app.core.config import get_settings
 
-# Import all models so metadata is populated
-from app.models import user, session, message, career, voice_session, voice_message  # noqa: F401
+from app.models import user, session, message, career, voice_session, voice_message, campus_session, campus_message, tools_session, tools_message, agents_session, agents_message  # noqa: F401
 
 config = context.config
 
 # Override the sqlalchemy.url from alembic.ini with the one from our environment settings
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+safe_url = settings.DATABASE_URL.replace("%", "%%")
+config.set_main_option("sqlalchemy.url", safe_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

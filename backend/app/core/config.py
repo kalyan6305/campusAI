@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # ── Database ──────────────────────────────────────
-    DATABASE_URL: str = "mysql+aiomysql://root:root@localhost:3306/campus_ai"
+    DATABASE_URL: str = "mysql+aiomysql://root:Uday%4012345@localhost:3306/campus_ai"
 
     # ── Security / JWT ────────────────────────────────
     SECRET_KEY: str = "change-me"
@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     GEMINI_API_KEY: str = ""
     GROQ_API_KEY: str = ""
+    SERPER_API_KEY: str = ""
+    YOUTUBE_API_KEY: str = ""
 
     # ── Job APIs ──────────────────────────────────────
     ADZUNA_APP_ID: str = ""

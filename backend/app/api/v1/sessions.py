@@ -58,7 +58,11 @@ async def get_messages(
         session_id, current_user.id, db, module=module
     )
     return [
-        MessageSchema(role=m.role, content=m.content)
+        MessageSchema(
+            role=m.role, 
+            content=m.content,
+            meta_data=getattr(m, "meta_data", None)
+        )
         for m in messages
     ]
 

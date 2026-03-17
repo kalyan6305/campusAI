@@ -6,7 +6,9 @@ import asyncio
 import logging
 import urllib.parse
 from typing import List, Dict, Any
-from duckduckgo_search import DDGS
+import httpx
+
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -35,39 +37,24 @@ class WebSearchService:
         """
         platform_links = self._generate_platform_links(query)
 
-        dev_query = (
-            f'{query} site:stackoverflow.com OR site:github.com '
-            f'OR site:geeksforgeeks.org OR site:w3schools.com OR site:developer.mozilla.org'
-        )
-        scholarly_query = (
-            f'{query} site:wikipedia.org OR site:arxiv.org OR site:scholar.google.com '
-            f'OR site:researchgate.net OR site:pubmed.ncbi.nlm.nih.gov'
-        )
-        general_query = query
-
-        logger.info("Launching 3 parallel searches for: %s", query)
+        logger.info("Launching single comprehensive search for: %s", query)
         
         # Use sync DDGS in a way that avoids hangs
-        results = await asyncio.gather(
-            self._run_search(dev_query, bucket="Development"),
-            self._run_search(scholarly_query, bucket="Scholarly"),
-            self._run_search(general_query, bucket="Web"),
-            return_exceptions=True
-        )
-        dev_results, scholarly_results, general_results = results
+        # We now run a single query rather than 3 parallel ones to avoid severe DuckDuckGo rate limiting
+        bucket_results = await self._run_search(query, bucket="Web", max_results=15)
 
         combined = []
         seen_urls = set()
 
-        for bucket in [dev_results, scholarly_results, general_results]:
-            if isinstance(bucket, Exception):
-                logger.warning("One search bucket failed: %s", bucket)
-                continue
-            for item in bucket:
-                url = item.get("link", "")
-                if url and url not in seen_urls:
-                    seen_urls.add(url)
-                    combined.append(item)
+        if isinstance(bucket_results, Exception):
+            logger.warning("Search failed: %s", bucket_results)
+            bucket_results = []
+            
+        for item in bucket_results:
+            url = item.get("link", "")
+            if url and url not in seen_urls:
+                seen_urls.add(url)
+                combined.append(item)
 
         if not combined:
             logger.warning("All buckets empty — using fallback results.")
@@ -80,37 +67,44 @@ class WebSearchService:
     # Internal helpers
     # ──────────────────────────────────────────────────────────────────
 
-    async def _run_search(self, query: str, bucket: str) -> List[Dict[str, Any]]:
-        """Run a single DuckDuckGo text search in a thread pool."""
-        loop = asyncio.get_running_loop()
-        try:
-            return await asyncio.wait_for(
-                loop.run_in_executor(None, self._sync_search, query, bucket),
-                timeout=10.0
-            )
-        except asyncio.TimeoutError:
-            logger.warning("Search timeout for bucket %s", bucket)
+    async def _run_search(self, query: str, bucket: str, max_results: int = 15) -> List[Dict[str, Any]]:
+        settings = get_settings()
+        api_key = settings.SERPER_API_KEY
+        
+        if not api_key:
+            logger.warning("No SERPER_API_KEY found. Falling back to empty results.")
             return []
-        except Exception as exc:
-            logger.error("Search execution failed for bucket %s: %s", bucket, exc)
-            return []
-
-    def _sync_search(self, query: str, bucket: str) -> List[Dict[str, Any]]:
+            
+        url = "https://google.serper.dev/search"
+        headers = {
+            'X-API-KEY': api_key,
+            'Content-Type': 'application/json'
+        }
+        payload = {"q": query, "num": max_results}
+        
         results = []
         try:
-            with DDGS() as ddgs:
-                for r in ddgs.text(query, max_results=self.results_per_bucket):
-                    domain = r["href"].split("//")[-1].split("/")[0]
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(url, headers=headers, json=payload)
+                response.raise_for_status()
+                data = response.json()
+                
+                organic = data.get("organic", [])
+                for r in organic:
+                    link = r.get("link", "")
+                    domain = link.split("//")[-1].split("/")[0] if link else "unknown"
+                    inferred_cat = self._infer_browser(domain)
                     results.append({
                         "source": domain,
-                        "title": r["title"],
-                        "snippet": r["body"],
-                        "link": r["href"],
-                        "browser": self._infer_browser(domain),
-                        "category": bucket,
+                        "title": r.get("title", ""),
+                        "snippet": r.get("snippet", ""),
+                        "link": link,
+                        "browser": inferred_cat,
+                        "category": inferred_cat,
                     })
         except Exception as exc:
-            logger.error("DDGS sync error for bucket %s: %s", bucket, exc)
+            logger.error("Serper API error: %s", exc)
+            
         return results
 
     def _generate_platform_links(self, query: str) -> List[Dict[str, str]]:

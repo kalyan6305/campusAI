@@ -80,11 +80,26 @@ const useChatStore = create((set, get) => ({
 
         try {
             const { data: messages } = await sessionAPI.getMessages(sessionId, currentModule);
+            
+            // Reconstruct research sources from the latest message that contains metadata
+            let latestSources = { browser: [], social: [], platform_links: [] };
+            if (currentModule === 'tools') {
+                for (let i = messages.length - 1; i >= 0; i--) {
+                    if (messages[i].meta_data && messages[i].meta_data.sources) {
+                        const meta = messages[i].meta_data;
+                        latestSources.browser = meta.sources;
+                        latestSources.platform_links = meta.platform_links || [];
+                        break;
+                    }
+                }
+            }
+
             set((state) => ({
                 messagesBySession: {
                     ...state.messagesBySession,
                     [sessionId]: messages,
                 },
+                researchSources: currentModule === 'tools' ? latestSources : state.researchSources
             }));
         } catch (err) {
             console.error('Failed to load messages', err);
