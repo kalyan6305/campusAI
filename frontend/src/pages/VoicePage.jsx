@@ -442,8 +442,6 @@ const VoicePage = () => {
                     <div>
                         <h2 className="text-sm font-black text-gray-900 dark:text-gray-100 uppercase tracking-wider">Voice Dashboard</h2>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                            <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">AI Voice Active</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">

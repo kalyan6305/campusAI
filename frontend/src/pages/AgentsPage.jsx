@@ -24,7 +24,6 @@ const AgentsPage = () => {
 
     const agents = [
         { id: 'job-apply', name: 'Job Assistant Agent', icon: '🚀', description: 'Find relevant jobs for seekers & graduates. Search by role, filter by location, and get direct application links.', color: 'blue' },
-        { id: 'academic', name: 'Academics Agent', icon: '📖', description: 'Syllabus-based expert tutoring.', color: 'purple' },
         { id: 'coding', name: 'Coding Agent', icon: '💻', description: 'Generate code, debug programs, and practice coding with an AI-powered coding workspace.', color: 'amber' },
         { id: 'interview', name: 'Interview Prep Agent', icon: '🎯', description: 'Practice role-specific interview questions and get expert feedback to ace your next job.', color: 'blue' },
         { id: 'resume', name: 'Resume Agent', icon: '📄', description: 'Optimize your resume for a specific job role by comparing it with a job description and generating a tailored version.', color: 'rose' },

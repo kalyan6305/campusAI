@@ -108,17 +108,10 @@ const ProfilePage = () => {
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                     <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                        Command Center
+                        Command Center for {userData.name}
                     </h1>
-                    <p className="mt-2 text-gray-500 dark:text-gray-400 font-medium text-lg">
-                        Operational overview for {userData.name}
-                    </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/50 uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                        System Active
-                    </span>
                 </div>
             </header>
 
@@ -135,56 +128,15 @@ const ProfilePage = () => {
                 </div>
             )}
 
-            {/* Streak Hero Card */}
-            <div className="relative group max-w-2xl mx-auto w-full">
-                <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+            {/* 3-Zone Layout Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.8fr_1.2fr] gap-8">
 
-                <div className="relative bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-[2.5rem] p-8 md:p-12 shadow-2xl flex flex-col md:flex-row items-center gap-8 overflow-hidden transform group-hover:scale-[1.01] transition-all duration-500">
-                    {/* Background Graphic */}
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 dark:bg-orange-500/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-
-                    <div className="relative flex-shrink-0">
-                        <div className="relative w-32 h-32 md:w-40 md:h-40 flex items-center justify-center">
-                            {/* Animated Fire Ring */}
-                            <div className="absolute inset-0 border-[6px] border-orange-100 dark:border-orange-900/30 rounded-full"></div>
-                            <div
-                                className="absolute inset-0 border-[6px] border-orange-500 rounded-full border-t-transparent animate-spin"
-                                style={{ animationDuration: '3s' }}
-                            ></div>
-
-                            <span className="text-6xl md:text-7xl animate-bounce-subtle drop-shadow-xl">🔥</span>
-                        </div>
-                    </div>
-
-                    <div className="relative text-center md:text-left space-y-2">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 text-orange-600 dark:text-orange-400 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-2">
-                            <span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></span>
-                            Operational Streak
-                        </div>
-                        <h2 className="text-6xl md:text-7xl font-black text-gray-900 dark:text-white tracking-tighter leading-none">
-                            {loginStreak} <span className="text-2xl md:text-3xl font-bold text-gray-400 dark:text-gray-500 tracking-tight">DAYS</span>
-                        </h2>
-                        <p className="text-gray-500 dark:text-gray-400 font-bold text-lg max-w-xs">
-                            {loginStreak > 0
-                                ? "Consecutive system interactions maintained. Keep the momentum."
-                                : "Initialize your first session today to start your streak."}
-                        </p>
-                    </div>
-
-                    <div className="absolute bottom-0 right-10 opacity-5 dark:opacity-10 pointer-events-none">
-                        <span className="text-[12rem] font-black select-none tracking-tighter">STREAK</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content Grid */}
-            <div className="grid lg:grid-cols-3 gap-8">
-                {/* Left: User Identity */}
-                <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-8 shadow-sm overflow-hidden relative">
+                {/* LEFT (25%): User Identity Card */}
+                <aside className="h-full">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-8 shadow-sm overflow-hidden relative h-full flex flex-col">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 opacity-[0.03] -mr-16 -mt-16 rounded-full"></div>
 
-                        <div className="flex flex-col items-center text-center">
+                        <div className="flex-grow flex flex-col items-center text-center">
                             <div className="relative mb-6">
                                 <div className="w-28 h-28 bg-gradient-to-tr from-blue-600 to-indigo-700 rounded-3xl flex items-center justify-center text-white text-4xl font-black shadow-2xl rotate-3 transform group-hover:rotate-0 transition duration-500">
                                     {userData.avatar}
@@ -208,12 +160,12 @@ const ProfilePage = () => {
                                     <p className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase leading-none">{userData.role}</p>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="mt-10 pt-8 border-t border-gray-50 dark:border-gray-700/50 space-y-4">
-                            <div className="flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/30 p-3 rounded-xl border border-transparent dark:border-gray-800/50">
-                                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Enrolled since</span>
-                                <span className="text-sm font-black text-gray-800 dark:text-white">{userData.memberSince}</span>
+                            <div className="w-full mt-auto pt-8 border-t border-gray-50 dark:border-gray-700/50 space-y-4">
+                                <div className="flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/30 p-3 rounded-xl border border-transparent dark:border-gray-800/50">
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Enrolled since</span>
+                                    <span className="text-sm font-black text-gray-800 dark:text-white">{userData.memberSince}</span>
+                                </div>
                             </div>
                         </div>
 
@@ -224,12 +176,46 @@ const ProfilePage = () => {
                             Decommission Session
                         </button>
                     </div>
-                </div>
+                </aside>
 
-                {/* Right: Activity & Controls */}
-                <div className="lg:col-span-2 space-y-8">
+                {/* CENTER (45%): Activity & Streak Hero Section */}
+                <main className="space-y-8 flex flex-col">
+                    {/* Streak Hero Card */}
+                    <div className="relative group w-full">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+
+                        <div className="relative bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-[2.5rem] p-8 md:p-10 shadow-2xl flex flex-col md:flex-row items-center gap-8 overflow-hidden transform group-hover:scale-[1.01] transition-all duration-500">
+                            {/* Background Elements */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 dark:bg-orange-500/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                            <div className="absolute inset-0 flex items-center justify-center opacity-5 dark:opacity-10 pointer-events-none select-none overflow-hidden">
+                                <span className="text-[12rem] font-black tracking-tighter blur-[1px]">STREAK</span>
+                            </div>
+
+                            <div className="relative flex-shrink-0">
+                                <div className="relative w-32 h-32 flex items-center justify-center">
+                                    <div className="absolute inset-0 border-[6px] border-orange-100 dark:border-orange-900/30 rounded-full"></div>
+                                    <div className="absolute inset-0 border-[6px] border-orange-500 rounded-full border-t-transparent animate-spin" style={{ animationDuration: '3s' }}></div>
+                                    <span className="text-6xl animate-flicker drop-shadow-xl select-none">🔥</span>
+                                </div>
+                            </div>
+
+                            <div className="relative text-center md:text-left space-y-2">
+                                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 text-orange-600 dark:text-orange-400 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+                                    <span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></span>
+                                    Operational Streak
+                                </div>
+                                <h2 className="text-6xl font-black text-gray-900 dark:text-white tracking-tighter leading-none">
+                                    {loginStreak} <span className="text-2xl font-bold text-gray-400 dark:text-gray-500 tracking-tight">DAYS</span>
+                                </h2>
+                                <p className="text-gray-500 dark:text-gray-400 font-bold text-lg max-w-xs">
+                                    {loginStreak > 0 ? "Consecutive system interactions maintained." : "Initialize your first session today."}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Activity Feed */}
-                    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-8 shadow-sm">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-8 shadow-sm flex-grow">
                         <div className="flex items-center justify-between mb-8">
                             <h2 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-3">
                                 <span className="w-2 h-8 bg-blue-600 rounded-full"></span>
@@ -262,67 +248,71 @@ const ProfilePage = () => {
                             ) : (
                                 <div className="py-20 text-center border-2 border-dashed border-gray-100 dark:border-gray-700/50 rounded-3xl">
                                     <p className="text-gray-400 dark:text-gray-500 font-black uppercase tracking-widest text-sm">No Recent Data Found</p>
-                                    <p className="text-xs text-gray-300 dark:text-gray-600 mt-1 uppercase">Initialize your first session to begin tracking</p>
+                                    <p className="text-xs text-gray-300 dark:text-gray-600 mt-1 uppercase">Initialize your first session</p>
                                 </div>
                             )}
                         </div>
                     </div>
+                </main>
 
-                    {/* Quick Preferences & Management */}
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-6 shadow-sm">
-                            <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4">Neural Theme</h3>
+                {/* RIGHT (30%): Settings & Controls Panel */}
+                <section className="h-full flex flex-col justify-between gap-8">
+                    {/* Neural Theme */}
+                    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-6 shadow-sm">
+                        <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4">Neural Theme</h3>
+                        <button
+                            onClick={toggleTheme}
+                            className="w-full flex items-center justify-between p-4 bg-blue-50/50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/30 group active:scale-95 transition-all"
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="text-xl">{theme === 'dark' ? '🌙' : '☀️'}</span>
+                                <span className="text-sm font-black text-blue-900 dark:text-blue-400 uppercase tracking-widest">
+                                    {theme === 'dark' ? 'Matrix Dark' : 'Daylight Ops'}
+                                </span>
+                            </div>
+                            <div className="w-10 h-6 bg-blue-600/20 rounded-full p-1 relative">
+                                <div className={`w-4 h-4 bg-blue-600 rounded-full transition-all duration-300 ${theme === 'dark' ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                            </div>
+                        </button>
+                    </div>
+
+                    {/* Security Protocol */}
+                    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                        <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4">Security Protocol</h3>
+                        <div className="space-y-3">
                             <button
-                                onClick={toggleTheme}
-                                className="w-full flex items-center justify-between p-4 bg-blue-50/50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/30 group active:scale-95 transition-all"
+                                onClick={handleResetRequest}
+                                disabled={resetStatus.type === 'loading'}
+                                className="w-full text-center py-4 bg-blue-600 dark:bg-blue-700 border border-transparent rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] text-white hover:bg-blue-700 dark:hover:bg-blue-800 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-blue-500/20"
                             >
-                                <div className="flex items-center gap-3">
-                                    <span className="text-xl">{theme === 'dark' ? '🌙' : '☀️'}</span>
-                                    <span className="text-sm font-black text-blue-900 dark:text-blue-400 uppercase tracking-widest">
-                                        {theme === 'dark' ? 'Matrix Dark' : 'Daylight Ops'}
-                                    </span>
-                                </div>
-                                <div className="w-10 h-6 bg-blue-600/20 rounded-full p-1 relative">
-                                    <div className={`w-4 h-4 bg-blue-600 rounded-full transition-all duration-300 ${theme === 'dark' ? 'translate-x-4' : 'translate-x-0'}`}></div>
-                                </div>
+                                Reset Access Key
                             </button>
-                        </div>
-
-                        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
-                            <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4">Security Protocol</h3>
-                            <div className="space-y-3">
-                                <button
-                                    onClick={handleResetRequest}
-                                    disabled={resetStatus.type === 'loading'}
-                                    className="w-full text-center py-4 bg-blue-600 dark:bg-blue-700 border border-transparent rounded-2xl text-[10px] font-black uppercase tracking-[0.1em] text-white hover:bg-blue-700 dark:hover:bg-blue-800 transition-all active:scale-95 disabled:opacity-50 shadow-lg shadow-blue-500/20"
-                                >
-                                    Reset Access Key
-                                </button>
-                                <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center font-bold px-4">
-                                    Sends a secure reset link to your registered email.
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-6 shadow-sm md:col-span-2">
-                            <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4">Data Management</h3>
-                            <div className="flex flex-col sm:flex-row gap-4">
-                                <button
-                                    onClick={handleDownloadLogs}
-                                    className="flex-1 py-4 bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 border border-gray-100 dark:border-gray-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 transition-all active:scale-95"
-                                >
-                                    💾 Download Operation Logs
-                                </button>
-                                <button
-                                    onClick={handleClearHistory}
-                                    className="flex-1 py-4 bg-red-50/50 dark:bg-red-900/10 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-100/50 dark:border-red-900/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 transition-all active:scale-95"
-                                >
-                                    🗑️ Purge Records
-                                </button>
-                            </div>
+                            <p className="text-[10px] text-gray-400 dark:text-gray-500 text-center font-bold px-4">
+                                Sends a secure reset link to your registered email.
+                            </p>
                         </div>
                     </div>
-                </div>
+
+                    {/* Data Management */}
+                    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-6 shadow-sm">
+                        <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4">Data Management</h3>
+                        <div className="space-y-3">
+                            <button
+                                onClick={handleDownloadLogs}
+                                className="w-full py-4 bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 border border-gray-100 dark:border-gray-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 transition-all active:scale-95"
+                            >
+                                💾 Download Logs
+                            </button>
+                            <button
+                                onClick={handleClearHistory}
+                                className="w-full py-4 bg-red-50/50 dark:bg-red-900/10 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-100/50 dark:border-red-900/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 transition-all active:scale-95"
+                            >
+                                🗑️ Purge Records
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
             </div>
         </div>
     );

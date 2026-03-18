@@ -68,8 +68,6 @@ const ToolsPage = () => {
                     <div>
                         <h1 className="text-xl font-bold text-slate-800 dark:text-gray-100 tracking-tight">RESEARCH DASHBOARD</h1>
                         <div className="flex items-center gap-2 mt-1">
-                            <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-                            <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">AI Analyst Active</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">

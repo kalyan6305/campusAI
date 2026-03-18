@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import useAuthStore from './store/authStore';
 import useThemeStore from './store/themeStore';
 import HomePage from './pages/HomePage';
-import CampusPage from './pages/CampusPage';
+import AcademicsPage from './pages/CampusPage';
 import ToolsPage from './pages/ToolsPage';
 import AgentsPage from './pages/AgentsPage';
 import LandingPage from './pages/LandingPage';
@@ -93,11 +93,11 @@ export default function App() {
                     }
                 />
                 <Route
-                    path="/campus"
+                    path="/academics"
                     element={
                         <ProtectedRoute>
                             <ProtectedLayout>
-                                <CampusPage />
+                                <AcademicsPage />
                             </ProtectedLayout>
                         </ProtectedRoute>
                     }

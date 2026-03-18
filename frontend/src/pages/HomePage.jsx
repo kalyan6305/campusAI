@@ -36,9 +36,6 @@ const HomePage = () => {
                 <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight flex items-center gap-2">
                     <span className="text-blue-600">AI</span> Chat Assistant
                 </h1>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 font-medium">
-                    Powering your campus productivity.
-                </p>
             </header>
 
             {/* Chat Container - Standardized Card Style */}

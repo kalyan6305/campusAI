@@ -63,10 +63,10 @@
 
   /* Voice AI — Orb gradient */
   .voice-orb-gradient {
-    background: radial-gradient(circle at 40% 40%, #818cf8, #6366f1 30%, #7c3aed 60%, #4f46e5 100%);
+    background: radial-gradient(circle at 40% 40%, #9ab5ae, #4c6665 30%, #304141 60%, #00192f 100%);
     box-shadow:
-      0 0 60px 15px rgba(99, 102, 241, 0.35),
-      0 0 120px 40px rgba(124, 58, 237, 0.2),
+      0 0 60px 15px rgba(76, 102, 101, 0.4),
+      0 0 120px 40px rgba(0, 25, 47, 0.25),
       inset 0 0 40px 10px rgba(255, 255, 255, 0.08);
   }
 
@@ -79,20 +79,20 @@
   }
 
   .voice-glass-bubble-user {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(79, 70, 229, 0.15));
-    color: #e0e7ff;
+    background: linear-gradient(135deg, rgba(162, 109, 93, 0.3), rgba(0, 25, 47, 0.2));
+    color: #dbdad5;
   }
 
   .voice-glass-bubble-ai {
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(99, 102, 241, 0.1));
-    color: #e0e7ff;
+    background: linear-gradient(135deg, rgba(76, 102, 101, 0.35), rgba(162, 109, 93, 0.15));
+    color: #dbdad5;
   }
 
   /* Voice AI — Glow ring for mic button */
   .voice-glow-ring {
     box-shadow:
-      0 0 20px 4px rgba(99, 102, 241, 0.4),
-      0 0 60px 12px rgba(124, 58, 237, 0.2);
+      0 0 20px 4px rgba(76, 102, 101, 0.5),
+      0 0 60px 12px rgba(162, 109, 93, 0.3);
   }
 }
 
@@ -101,4 +101,14 @@
   0% { opacity: 1; }
   50% { opacity: 0; }
   100% { opacity: 1; }
+}
+
+/* Flame flicker animation */
+@keyframes flicker {
+  0%, 100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.4)); }
+  50% { transform: scale(1.15); opacity: 0.8; filter: drop-shadow(0 0 20px rgba(249, 115, 22, 0.6)); }
+}
+
+.animate-flicker {
+  animation: flicker 0.8s ease-in-out infinite;
 }
