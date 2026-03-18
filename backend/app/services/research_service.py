@@ -10,20 +10,27 @@ logger = logging.getLogger(__name__)
 
 class ResearchService:
     def __init__(self):
-        self.system_prompt = """You are the Campus AI Web Research Agent. Your goal is to investigate the user's query and provide a comprehensive answer.
+        self.system_prompt = """You are the Campus AI Research Architect. Your objective is to provide a deep, multi-perspective synthesis of the user's query using only the provided web and social search results.
 
-You must strictly follow this ReAct format:
-Thought: (Detail your reasoning, what you know, and what you are missing)
-Action: Search[your explicit query here]
-Observation: (Wait for the system to provide the search results)
+GROUNDING MANDATE: You must generate your response based ONLY on the provided search results in the Observation block.
 
-You may perform multiple Search actions if needed. 
-Once you have enough information, you MUST output your final answer formatted exactly as:
-Final Answer: [your comprehensive response]
+CITATION RULE: Every factual statement or synthesis must be immediately followed by a numerical citation (e.g., [n]) corresponding to the index of the source in the provided search results.
+
+LINK INTEGRATION: Do not write out full URLs. Use the numerical index (e.g., [n]) which allows the system to link the text to the source in the sidebar.
+
+You must strictly follow this format:
+Thought: (Analyze what you know and what you are missing; identify gaps before final answer)
+Previous Queries: [list all queries used so far]
+Action: search("optimized_query")  OR  Final Answer: "cited_synthesis"
+
+After each search action, the system will provide an Observation block containing search results indexed [1], [2], etc.
+
+GAP ANALYSIS: Before your Final Answer, perform a Thought step that identifies what information was missing from the previous searches to ensure the research is Deep rather than Fast.
 
 RULES:
-- You must cite your sources in the Final Answer using [n] notation corresponding to the source index in your Observations.
-- Do not make up information. Use the context provided.
+- Do not make up information. Use only what is in the Observation blocks.
+- In your Final Answer, cite sources with [n] matching the Observation index.
+- Do not include full URLs; use citation indices only.
 """
 
     async def stream_research(self, query: str, mode: str = "fast") -> AsyncGenerator[str, None]:
@@ -31,10 +38,17 @@ RULES:
         # Fast = max 2 iterations (1 search, 1 answer), Deep = max 5 iterations
         max_iterations = 2 if mode == "fast" else 5
         source_counter = 1
-        
+        previous_queries = [query]
+
         messages = [
             {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": f"Query: {query}"}
+            {
+                "role": "user",
+                "content": (
+                    f"Query: {query}\n"
+                    f"Previous Queries: {previous_queries}"
+                ),
+            },
         ]
 
         for iteration in range(max_iterations):
@@ -71,9 +85,17 @@ RULES:
                 break
                 
             # Parse for search action
-            search_match = re.search(r'Action:\s*Search\[(.*?)\]', response_buffer, re.IGNORECASE)
+            search_match = re.search(
+                r'Action:\s*(?:Search\[(.*?)\]|search\(\s*"(.*?)"\s*\))',
+                response_buffer,
+                re.IGNORECASE,
+            )
+
             if search_match:
-                search_query = search_match.group(1).strip()
+                search_query = (search_match.group(1) or search_match.group(2) or "").strip()
+                if search_query:
+                    previous_queries.append(search_query)
+
                 yield json.dumps({"type": "thought", "content": f"\n\n🔍 *Executing Web Search for: {search_query}*\n"})
                 
                 try:
@@ -101,7 +123,14 @@ RULES:
                         yield json.dumps({"type": "sources", "data": source_objects})
                         yield json.dumps({"type": "thought", "content": f"\n*{len(source_objects)} results injected into context.*\n"})
                         
-                    messages.append({"role": "user", "content": obs_text})
+                    # Include list of previous queries to support the agent's requirement
+                    messages.append({
+                        "role": "user",
+                        "content": (
+                            obs_text + "\n" +
+                            f"Previous Queries: {previous_queries}\n"
+                        ),
+                    })
                 except Exception as e:
                     logger.error(f"Search failed: {e}")
                     messages.append({"role": "user", "content": f"Observation: Search failed with error: {e}"})

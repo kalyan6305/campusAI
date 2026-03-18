@@ -17,6 +17,7 @@ from app.api.v1.interview_router import router as interview_router
 from app.api.v1.research_router import router as research_router
 from app.api.v1.coding_router import router as coding_router
 from app.api.v1.study_planner_router import router as study_planner_router
+from app.api.v1.research import router as research_stream_router
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(auth_router)
@@ -30,4 +31,5 @@ v1_router.include_router(interview_router)
 v1_router.include_router(research_router)
 v1_router.include_router(coding_router)
 v1_router.include_router(study_planner_router)
+v1_router.include_router(research_stream_router)
 
