@@ -32,10 +32,12 @@ const HomePage = () => {
 
     return (
         <div className="page-container animate-fade-in flex flex-col h-full overflow-hidden">
-            <header className="mb-6 flex-shrink-0">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">General AI Chat</h1>
-                <p className="mt-2 text-lg text-gray-600 dark:text-gray-400 font-medium">
-                    Ask anything using the Campus AI assistant.
+            <header className="mb-4 flex-shrink-0">
+                <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight flex items-center gap-2">
+                    <span className="text-blue-600">AI</span> Chat Assistant
+                </h1>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 font-medium">
+                    Powering your campus productivity.
                 </p>
             </header>
 

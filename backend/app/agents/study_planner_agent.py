@@ -115,8 +115,8 @@ Exam Date: {exam_date or 'Not provided'}
         ]
 
         try:
-            # 45s hard timeout
-            response_text = await asyncio.wait_for(self.llm.generate(messages), timeout=45.0)
+            # 90s hard timeout — gemini-2.0-flash is fast, but large plans need headroom
+            response_text = await asyncio.wait_for(self.llm.generate(messages), timeout=90.0)
             
             # Extract JSON from potential markdown blocks
             if "```json" in response_text:

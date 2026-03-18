@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import useChatStore from '../../store/chatStore';
 import useAuthStore from '../../store/authStore';
 
-export default function SessionSidebar() {
+export default function SessionSidebar({ isOpen, setIsOpen }) {
     const { getSessions, activeSessionId, loadSessions, createSession, selectSession, deleteSession, renameSession } = useChatStore();
     const sessions = getSessions();
     const { user, logout } = useAuthStore();
@@ -51,39 +51,65 @@ export default function SessionSidebar() {
     };
 
     return (
-        <aside className="w-72 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col h-full shadow-sm animate-fade-in font-sans">
+        <aside className={`${isOpen ? 'w-64' : 'w-16'} bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col h-full shadow-sm sidebar-transition font-sans relative`}>
+            {/* Toggle Button */}
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-full flex items-center justify-center shadow-md hover:text-blue-600 dark:hover:text-blue-400 z-50 group transition-all"
+            >
+                <svg className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+
             {/* Header */}
-            <div className="p-5 border-b border-gray-50 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                        <span className="text-lg">🎓</span>
+            <div className={`p-4 border-b border-gray-50 dark:border-gray-800 bg-gray-50/20 dark:bg-gray-800/20 ${!isOpen && 'flex flex-col items-center'}`}>
+                <div className={`flex items-center gap-2 ${isOpen ? 'mb-4' : 'mb-0'}`}>
+                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0">
+                        <span className="text-sm">🎓</span>
                     </div>
-                    <div>
-                        <h1 className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-tight uppercase">Campus AI</h1>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">Operating System</p>
-                    </div>
+                    {isOpen && (
+                        <div className="min-w-0">
+                            <h1 className="text-xs font-black text-gray-900 dark:text-gray-100 tracking-tight uppercase truncate">Campus AI</h1>
+                            <p className="text-[8px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">OS</p>
+                        </div>
+                    )}
                 </div>
 
-                <button
-                    onClick={handleNewChat}
-                    className="w-full btn-primary flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest py-2.5"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    New Chat
-                </button>
+                {isOpen ? (
+                    <button
+                        onClick={handleNewChat}
+                        className="w-full btn-primary flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest py-2 rounded-lg"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                        New Chat
+                    </button>
+                ) : (
+                    <button
+                        onClick={handleNewChat}
+                        className="w-full p-2 mt-4 text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center justify-center rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all border border-transparent hover:border-blue-100 dark:hover:border-blue-800/50"
+                        title="New Chat"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                    </button>
+                )}
             </div>
 
             {/* Session list */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
-                <div className="px-3 mb-2">
-                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Recent Sessions</span>
-                </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar overflow-x-hidden">
+                {isOpen && (
+                    <div className="px-2 mb-1">
+                        <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Sessions</span>
+                    </div>
+                )}
                 {sessions.map((session) => (
                     <div
                         key={session.id}
-                        className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200 ${activeSessionId === session.id
+                        className={`group flex items-center gap-2 ${isOpen ? 'px-2 py-2.5' : 'p-2 justify-center'} rounded-xl cursor-pointer transition-all duration-200 ${activeSessionId === session.id
                             ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-100/50 dark:border-blue-800/30 shadow-sm font-bold'
                             : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200 border border-transparent'
                             }`}
@@ -91,6 +117,7 @@ export default function SessionSidebar() {
                             selectSession(session.id);
                             navigate('/home');
                         }}
+                        title={!isOpen ? session.title : ''}
                     >
                         {session.module === 'voice' ? (
                             <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 flex-shrink-0 ${activeSessionId === session.id ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -102,63 +129,69 @@ export default function SessionSidebar() {
                             </svg>
                         )}
 
-                        {editingSessionId === session.id ? (
-                            <input
-                                ref={editInputRef}
-                                type="text"
-                                value={editTitle}
-                                onChange={(e) => setEditTitle(e.target.value)}
-                                onBlur={handleRename}
-                                onKeyDown={handleKeyDown}
-                                className="flex-1 bg-white dark:bg-gray-800 border border-blue-300 dark:border-blue-700 rounded px-1.5 py-0.5 text-xs focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 outline-none text-gray-900 dark:text-gray-100"
-                                onClick={(e) => e.stopPropagation()}
-                            />
-                        ) : (
-                            <span className="flex-1 text-xs truncate">{session.title}</span>
-                        )}
+                        {isOpen && (
+                            <>
+                                {editingSessionId === session.id ? (
+                                    <input
+                                        ref={editInputRef}
+                                        type="text"
+                                        value={editTitle}
+                                        onChange={(e) => setEditTitle(e.target.value)}
+                                        onBlur={handleRename}
+                                        onKeyDown={handleKeyDown}
+                                        className="flex-1 bg-white dark:bg-gray-800 border border-blue-300 dark:border-blue-700 rounded px-1.5 py-0.5 text-[11px] focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 outline-none text-gray-900 dark:text-gray-100"
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
+                                ) : (
+                                    <span className="flex-1 text-[11px] truncate leading-tight">{session.title}</span>
+                                )}
 
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                            <button
-                                onClick={(e) => startEditing(e, session)}
-                                className="p-1 hover:bg-white dark:hover:bg-gray-700 rounded-md border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
-                                title="Rename session"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
-                                </svg>
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteSession(session.id);
-                                }}
-                                className="p-1 hover:bg-white dark:hover:bg-gray-700 rounded-md border border-transparent hover:border-gray-200 dark:hover:border-gray-600"
-                                title="Delete session"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                </svg>
-                            </button>
-                        </div>
+                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
+                                    <button
+                                        onClick={(e) => startEditing(e, session)}
+                                        className="p-1 hover:text-blue-600 dark:hover:text-blue-400"
+                                        title="Rename"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            deleteSession(session.id);
+                                        }}
+                                        className="p-1 hover:text-red-500"
+                                        title="Delete"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 ))}
             </div>
 
             {/* User profile */}
-            <div className="p-4 border-t border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
-                <div className="flex items-center gap-3 px-1">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[10px] font-bold text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/30 uppercase">
+            <div className={`p-3 border-t border-gray-50 dark:border-gray-800 bg-gray-50/20 dark:bg-gray-800/10 ${!isOpen && 'flex flex-col items-center'}`}>
+                <div className={`flex items-center gap-2 px-1 ${!isOpen && 'flex-col'}`}>
+                    <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[10px] font-black text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/20 uppercase flex-shrink-0">
                         {user?.email?.[0]?.toUpperCase() || 'U'}
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300 truncate">{user?.email || 'User'}</p>
-                    </div>
+                    {isOpen && (
+                        <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-black text-gray-700 dark:text-gray-300 truncate tracking-tight">{user?.email || 'User'}</p>
+                        </div>
+                    )}
                     <button
                         onClick={logout}
-                        className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-white dark:hover:bg-gray-800 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+                        className={`p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg transition-all ${!isOpen && 'mt-2'}`}
                         title="Sign out"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
                         </svg>
                     </button>

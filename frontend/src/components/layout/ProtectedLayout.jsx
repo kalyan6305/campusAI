@@ -5,19 +5,22 @@ import Navbar from './Navbar';
 
 const ProtectedLayout = ({ children }) => {
     const location = useLocation();
-    const hideGlobalSidebar = ['/campus', '/tools', '/agents', '/voice', '/profile'].includes(location.pathname);
+    const showSidebar = location.pathname === '/home';
+    const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
 
     return (
         <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden font-sans">
             {/* Top Navigation - Full Width */}
             <Navbar />
 
-            <div className="flex-1 flex min-h-0">
-                {/* Side History Sidebar - Hidden on specialized pages */}
-                {!hideGlobalSidebar && <SessionSidebar />}
+            <div className="flex-1 flex min-h-0 relative">
+                {/* Side History Sidebar - Only shown on Home page */}
+                {showSidebar && (
+                    <SessionSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+                )}
 
                 {/* Main Content Area */}
-                <main className="flex-1 overflow-hidden p-0 bg-gray-50 dark:bg-gray-900">
+                <main className={`flex-1 overflow-hidden p-0 bg-gray-50 dark:bg-gray-900 sidebar-transition ${isSidebarOpen && showSidebar ? '' : 'ml-0'}`}>
                     {children}
                 </main>
             </div>

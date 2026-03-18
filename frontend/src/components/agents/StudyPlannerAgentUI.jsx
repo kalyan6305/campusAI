@@ -8,7 +8,7 @@ import {
 
 // const API_BASE = '/api/v1/study-planner';
 
-const StudyPlannerAgentUI = () => {
+const StudyPlannerAgentUI = ({ showHistory, setShowHistory }) => {
   const [step, setStep] = useState(1); // 1: Input, 2: Researching, 3: Result, 4: Error
   const [formData, setFormData] = useState({
     subject: '',
@@ -24,7 +24,6 @@ const StudyPlannerAgentUI = () => {
   const [sessionId, setSessionId] = useState(null);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'card'
   const [history, setHistory] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
 
   const loadingMessages = [
     "Analyzing Subject...",
@@ -551,13 +550,6 @@ const StudyPlannerAgentUI = () => {
 
   return (
     <div className="h-full w-full flex flex-col p-6 md:p-10 bg-gray-50/50 dark:bg-gray-900/50 custom-scrollbar overflow-y-auto relative">
-      <button 
-        onClick={() => setShowHistory(true)}
-        className="fixed top-8 right-8 z-40 p-3 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xl text-gray-500 hover:text-blue-600 transition-all group"
-      >
-        <ListIcon className="w-6 h-6" />
-        <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-[10px] font-black px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap uppercase tracking-widest pointer-events-none shadow-xl">Plan History</span>
-      </button>
 
       {renderHistory()}
 
