@@ -1,17 +1,21 @@
 import React from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import useThemeStore from '../../store/themeStore';
 import useAuthStore from '../../store/authStore';
 
-const Navbar = () => {
+const Navbar = ({ hideThemeToggle = false }) => {
     const { theme, toggleTheme } = useThemeStore();
-    const { logout } = useAuthStore();
+    const { logout, user } = useAuthStore();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleLogout = () => {
         logout();
         navigate('/');
     };
+
+    const isAuthenticated = !!user;
+    const isMarketingPage = location.pathname === '/' || location.pathname === '/auth' || location.pathname === '/forgot-password' || location.pathname === '/reset-password';
 
     const navLinks = [
         { 
@@ -47,9 +51,9 @@ const Navbar = () => {
     ];
 
     return (
-        <nav className="sticky top-0 z-50 w-full bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm transition-all duration-300">
-            <div className="max-w-[1600px] mx-auto px-4">
-                <div className="flex justify-between h-14 items-center">
+        <nav className="sticky top-0 z-50 w-full bg-white dark:bg-[#060912] border-b border-gray-100 dark:border-white/5 shadow-sm transition-all duration-300">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-8">
+                <div className="flex justify-between h-16 items-center">
                     {/* Logo */}
                     <div className="flex-shrink-0 flex items-center">
                         <Link to="/" className="text-xl font-black text-blue-600 dark:text-blue-500 tracking-tight hover:opacity-90 transition-opacity flex items-center gap-2">
@@ -58,55 +62,87 @@ const Navbar = () => {
                         </Link>
                     </div>
 
-                    {/* Navigation Buttons */}
-                    <div className="hidden md:flex items-center space-x-1">
-                        {navLinks.map((link) => (
-                            <NavLink
-                                key={link.name}
-                                to={link.path}
-                                className={({ isActive }) =>
-                                    `px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-2 ${isActive
-                                        ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 shadow-sm'
-                                        : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800'
-                                    }`
-                                }
-                            >
-                                <span className="scale-100">{link.icon}</span>
-                                <span>{link.name}</span>
-                            </NavLink>
-                        ))}
-                    </div>
+                    {/* Navigation Buttons - Hidden on Marketing/Auth Pages */}
+                    {!isMarketingPage && (
+                        <div className="hidden md:flex items-center space-x-1">
+                            {navLinks.map((link) => (
+                                <NavLink
+                                    key={link.name}
+                                    to={link.path}
+                                    className={({ isActive }) =>
+                                        `px-4 py-2 rounded-xl text-[11px] uppercase tracking-wider font-bold transition-all duration-200 flex items-center gap-2 ${isActive
+                                            ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 shadow-sm'
+                                            : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                                        }`
+                                    }
+                                >
+                                    <span className="scale-100">{link.icon}</span>
+                                    <span>{link.name}</span>
+                                </NavLink>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Right Side Actions */}
-                    <div className="flex items-center gap-3">
-                        {/* Theme Toggle */}
-                        <button
-                            onClick={toggleTheme}
-                            className="p-2.5 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors focus:outline-none"
-                            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                        >
-                            {theme === 'dark' ? (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                            ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                                </svg>
-                            )}
-                        </button>
+                    <div className="flex items-center gap-4">
+                        {/* Marketing Page Action Buttons */}
+                        {isMarketingPage ? (
+                            <>
+                                {isAuthenticated ? (
+                                    <Link 
+                                        to="/home" 
+                                        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
+                                    >
+                                        Go to Dashboard
+                                    </Link>
+                                ) : (
+                                    <>
+                                        <Link to="/auth" className="text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-xs font-bold transition-colors">
+                                            Login
+                                        </Link>
+                                        <Link 
+                                            to="/auth" 
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-blue-500/20"
+                                        >
+                                            Get Started
+                                        </Link>
+                                    </>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                {/* Theme Toggle (Internal Pages) */}
+                                {!hideThemeToggle && (
+                                    <button
+                                        onClick={toggleTheme}
+                                        className="p-2.5 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors focus:outline-none"
+                                        title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                                    >
+                                        {theme === 'dark' ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                            </svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                )}
 
-                        {/* Logout Button */}
-                        <button
-                            onClick={handleLogout}
-                            className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-4 py-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/40 hover:text-red-600 dark:hover:text-red-400 transition-all border border-transparent hover:border-red-100 dark:hover:border-red-900/50 flex items-center gap-2"
-                            title="Sign Out"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013-3v1" />
-                            </svg>
-                            <span className="text-[11px] font-bold uppercase tracking-wider">Sign Out</span>
-                        </button>
+                                {/* Logout Button */}
+                                <button
+                                    onClick={handleLogout}
+                                    className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-4 py-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/40 hover:text-red-600 dark:hover:text-red-400 transition-all border border-transparent hover:border-red-100 dark:hover:border-red-900/50 flex items-center gap-2"
+                                    title="Sign Out"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013-3v1" />
+                                    </svg>
+                                    <span className="text-[11px] font-bold uppercase tracking-wider">Sign Out</span>
+                                </button>
+                            </>
+                        )}
 
                         {/* Mobile menu button */}
                         <div className="md:hidden flex items-center">

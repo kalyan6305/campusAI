@@ -1,2 +1,0 @@
-﻿C:\Users\illaj\OneDrive\Desktop\LLM\frontend\src\components\sidebar\ResearchSidebar.jsx
-C:\Users\illaj\OneDrive\Desktop\LLM\frontend\src\pages\ToolsPage.jsx

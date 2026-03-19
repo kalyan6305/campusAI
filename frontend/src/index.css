@@ -1,11 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Syne:wght@400..800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@keyframes pulse-soft {
+  0%, 100% { transform: scale(1) rotate(-1deg); opacity: 0.9; }
+  50% { transform: scale(1.05) rotate(-1deg); opacity: 1; }
+}
+
+.pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
+:root {
+  --bg-dark-primary: #060912;
+  --bg-dark-secondary: #0d1117;
+  --bg-dark-tertiary: #0a111e;
+  --accent-teal: #2dd4bf;
+  --accent-blue: #3b82f6;
+  --accent-gradient: linear-gradient(135deg, var(--accent-teal), var(--accent-blue));
+}
+
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 font-sans dark:bg-gray-900 dark:text-gray-100;
+    @apply bg-gray-50 text-gray-900 font-sans dark:bg-[#060912] dark:text-gray-100 antialiased;
   }
+
+  h1, h2, h3, h4 {
+    @apply tracking-tight;
+  }
+
+/* Page-Specific Typography Utilities */
+.font-landing-body { font-family: 'DM Sans', sans-serif; }
+.font-landing-header { font-family: 'Syne', sans-serif; }
 
   * {
     scrollbar-width: thin;
@@ -112,3 +140,131 @@
 .animate-flicker {
   animation: flicker 0.8s ease-in-out infinite;
 }
+
+/* Bento Grid Styles */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: minmax(360px, auto);
+  gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
+  }
+}
+
+.feature-card {
+  @apply relative overflow-hidden rounded-[2.5rem] border border-gray-100/10 dark:border-white/5 p-10 transition-all duration-700 bg-gray-50/50 dark:bg-[#0a0f1e]/40 backdrop-blur-3xl;
+}
+
+.feature-card:hover {
+  @apply border-blue-500/40;
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.4);
+}
+
+.feature-card-large {
+  @apply col-span-2;
+}
+
+@media (max-width: 640px) {
+  .feature-card-large {
+    @apply col-span-1;
+  }
+}
+
+.feature-icon-wrapper {
+  @apply w-12 h-12 rounded-2xl flex items-center justify-center mb-8 bg-[#3b82f6]/20 text-[#60a5fa] border border-[#3b82f6]/30 shadow-[0_0_20px_rgba(59,130,246,0.3)];
+}
+
+.feature-tag {
+  @apply inline-flex items-center px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-widest bg-white/5 border border-white/10 text-gray-400 mr-3;
+}
+
+/* Advanced Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(1deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+  50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.7); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* Hero Section Styles */
+.hero-title {
+  @apply text-5xl md:text-7xl font-bold text-white leading-[1.1] tracking-tight;
+}
+
+.hero-gradient-text {
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(180deg, #94a3b8 0%, #ffffff 100%);
+}
+
+.hero-gradient-accent {
+  @apply bg-clip-text text-transparent;
+  background-image: linear-gradient(to bottom, #60a5fa, #3b82f6);
+}
+
+.hero-badge {
+  @apply inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-[0.2em] text-blue-400 mb-8 backdrop-blur-md;
+}
+
+.btn-hero-primary {
+  @apply relative px-8 py-4 rounded-xl font-bold text-base text-white transition-all duration-300 overflow-hidden isolate shadow-[0_10px_30px_-10px_rgba(59,130,246,0.5)];
+  background: #3b82f6;
+}
+
+.btn-hero-primary:hover {
+  @apply -translate-y-1 scale-[1.02] shadow-[0_15px_40px_-5px_rgba(59,130,246,0.6)];
+  background: #2563eb;
+}
+
+.btn-hero-ghost {
+  @apply px-8 py-4 rounded-xl font-bold text-base text-white/80 border border-white/10 hover:bg-white/5 hover:text-white transition-all duration-300 flex items-center gap-2;
+}
+
+/* Navbar Refinement for Dark Landing */
+.dark nav {
+  background-color: rgba(6, 9, 18, 0.8) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.masonry-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+@media (max-width: 1024px) {
+  .masonry-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .masonry-grid { grid-template-columns: 1fr; }
+}
+
+

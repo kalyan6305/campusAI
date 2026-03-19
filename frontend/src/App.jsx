@@ -46,11 +46,7 @@ export default function App() {
                 {/* Public / Landing Routes */}
                 <Route
                     path="/"
-                    element={
-                        <MainLayout>
-                            <LandingPage />
-                        </MainLayout>
-                    }
+                    element={<LandingPage />}
                 />
                 <Route
                     path="/auth"

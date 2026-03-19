@@ -9,7 +9,7 @@ const ProtectedLayout = ({ children }) => {
     const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
 
     return (
-        <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden font-sans">
+        <div className="flex flex-col h-screen bg-gray-50 dark:bg-[#060912] overflow-hidden font-sans">
             {/* Top Navigation - Full Width */}
             <Navbar />
 
@@ -20,7 +20,7 @@ const ProtectedLayout = ({ children }) => {
                 )}
 
                 {/* Main Content Area */}
-                <main className={`flex-1 overflow-hidden p-0 bg-gray-50 dark:bg-gray-900 sidebar-transition ${isSidebarOpen && showSidebar ? '' : 'ml-0'}`}>
+                <main className={`flex-1 overflow-hidden p-0 bg-gray-50 dark:bg-[#060912] sidebar-transition ${isSidebarOpen && showSidebar ? '' : 'ml-0'}`}>
                     {children}
                 </main>
             </div>
