@@ -11,7 +11,9 @@ from app.schemas.interview import (
     InterviewFeedbackResponse,
     LearningSuggestionsResponse,
     InterviewDoubtRequest,
-    InterviewDoubtResponse
+    InterviewDoubtResponse,
+    FinalInterviewReportRequest,
+    FinalInterviewReportResponse
 )
 
 logger = logging.getLogger(__name__)
@@ -27,15 +29,23 @@ async def generate_interview_questions(
         agent = InterviewPreparationAgent()
         questions = await agent.generate_questions(
             request.role, 
-            request.interview_type, 
-            request.exclude_questions
+            request.interview_type,
+            company=request.company,
+            round_type=request.round_type,
+            difficulty=request.difficulty,
+            exclude_questions=request.exclude_questions,
+            user_type=request.user_type,
+            experience_years=request.experience_years,
+            num_questions=request.num_questions
         )
         if not questions:
             raise HTTPException(status_code=500, detail="Failed to generate questions. Please try again.")
             
         return InterviewQuestionsResponse(
             role=request.role,
+            company=request.company,
             interview_type=request.interview_type,
+            round_type=request.round_type,
             questions=questions
         )
     except Exception as e:
@@ -69,7 +79,14 @@ async def get_interview_feedback(
     """Analyze user's answer and return feedback."""
     try:
         agent = InterviewPreparationAgent()
-        feedback = await agent.analyze_answer(request.role, request.question, request.user_answer)
+        feedback = await agent.analyze_answer(
+            request.role, 
+            request.question, 
+            request.user_answer,
+            expected_signals=request.expected_signals,
+            follow_up_probes=request.follow_up_probes,
+            hint_used=request.hint_used
+        )
         return InterviewFeedbackResponse(**feedback)
     except Exception as e:
         logger.error(f"Failed to analyze answer: {e}")
@@ -87,4 +104,23 @@ async def get_learning_suggestions(
         return LearningSuggestionsResponse(topics=topics)
     except Exception as e:
         logger.error(f"Failed to generate suggestions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/final-report", response_model=FinalInterviewReportResponse)
+async def generate_final_interview_report(
+    request: FinalInterviewReportRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Generate final interview report from all rounds."""
+    try:
+        agent = InterviewPreparationAgent()
+        report = await agent.generate_final_report(
+            request.role, 
+            request.company, 
+            request.round_results,
+            request.overall_dimension_avgs
+        )
+        return FinalInterviewReportResponse(**report)
+    except Exception as e:
+        logger.error(f"Failed to generate final report: {e}")
         raise HTTPException(status_code=500, detail=str(e))

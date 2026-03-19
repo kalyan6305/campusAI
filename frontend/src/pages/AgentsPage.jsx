@@ -129,7 +129,7 @@ const AgentsPage = () => {
 
                     <div className="flex-grow flex gap-6 min-w-0 h-full overflow-hidden">
                         {/* Agent-Specific History Sidebar */}
-                        {showHistory && (selectedAgent !== 'resume' && selectedAgent !== 'interview' && selectedAgent !== 'coding' && selectedAgent !== 'study_planner') && (
+                        {showHistory && (selectedAgent !== 'resume' && selectedAgent !== 'interview' && selectedAgent !== 'research' && selectedAgent !== 'coding' && selectedAgent !== 'study_planner') && (
                             <aside className="w-64 flex-shrink-0 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col transition-all duration-300">
                                 <div className="p-4 border-b border-gray-50 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/30">
                                     <h2 className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Agent History</h2>

@@ -2,30 +2,51 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 class InterviewQuestion(BaseModel):
-    id: int
+    id: str
+    topic: str
     question: str
+    difficulty: str
     suggested_answer: str
+    expected_signals: List[str]
+    follow_up_probes: List[str]
+    company_tip: str
 
 class InterviewRoleRequest(BaseModel):
     role: str
-    interview_type: str  # Technical, HR, Mixed, Aptitude Test
+    company: Optional[str] = "Generic"
+    interview_type: str
+    round_type: Optional[str] = None
+    difficulty: Optional[str] = "Intermediate"
     exclude_questions: Optional[List[str]] = []
+    user_type: Optional[str] = "general"
+    experience_years: Optional[int] = 0
+    num_questions: Optional[int] = 5
 
 class InterviewQuestionsResponse(BaseModel):
     role: str
+    company: str
     interview_type: str
+    round_type: Optional[str] = None
     questions: List[InterviewQuestion]
 
 class InterviewFeedbackRequest(BaseModel):
     role: str
+    company: str
     question: str
     user_answer: str
+    round_type: Optional[str] = None
+    expected_signals: Optional[List[str]] = None
+    follow_up_probes: Optional[List[str]] = None
+    hint_used: Optional[bool] = False
 
 class InterviewFeedbackResponse(BaseModel):
-    clarity_score: int  # 0-100
-    feedback: str
+    clarity_score: int
+    what_was_good: str
     missing_points: List[str]
     suggestions: List[str]
+    scores: Optional[dict] = None # Detailed dimension scores
+    follow_up_question: Optional[str] = None
+    interviewer_reaction: Optional[str] = None
 
 class LearningSuggestionsResponse(BaseModel):
     topics: List[str]
@@ -40,3 +61,18 @@ class InterviewDoubtRequest(BaseModel):
 class InterviewDoubtResponse(BaseModel):
     answer: str
     suggestions: List[str]
+
+class FinalInterviewReportRequest(BaseModel):
+    role: str
+    company: str
+    round_results: List[dict]
+    overall_dimension_avgs: dict
+
+class FinalInterviewReportResponse(BaseModel):
+    overall_score: int
+    round_scores: dict
+    strengths: List[str]
+    weaknesses: List[str]
+    selection_probability: str
+    learning_plan: List[str]
+    next_focus: str

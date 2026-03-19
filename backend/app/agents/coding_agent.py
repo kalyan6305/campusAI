@@ -4,9 +4,9 @@ Coding Agent - Helps students with programming tasks, debugging, and algorithms.
 
 from __future__ import annotations
 import logging
-import httpx
-from typing import Dict, List, Any, AsyncIterator
+from typing import AsyncIterator
 from app.llm.factory import get_llm_provider
+from app.utils.code_runner import execute_code
 
 logger = logging.getLogger(__name__)
 
@@ -57,48 +57,72 @@ Guidelines:
 
     async def generate_raw_code(self, prompt: str, language: str) -> str:
         """Generates pure code for editor insertion without markdown formatting."""
+        logger.info(f"Generating raw {language} code for prompt: {prompt[:50]}...")
         sys_prompt = f"You are an expert AI programmer. The user needs {language} code. Output ONLY valid {language} code. Do not use markdown blocks (no ```). Do not include any explanations, conversational text, or file names. Your entire response must be valid {language} code that can be executed as-is."
         messages = [
             {"role": "system", "content": sys_prompt},
             {"role": "user", "content": prompt}
         ]
         try:
-            return await self.llm.generate(messages)
+            raw_response = await self.llm.generate(messages)
+            
+            # Strip markdown code blocks if the LLM included them despite instructions
+            code = raw_response.strip()
+            if code.startswith("```"):
+                # Remove first line if it's ```lang
+                lines = code.splitlines()
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                # Remove last line if it's ```
+                if lines and lines[-1].startswith("```"):
+                    lines = lines[:-1]
+                code = "\n".join(lines).strip()
+            
+            logger.info(f"Successfully generated {len(code)} characters of code.")
+            return code
         except Exception as e:
             logger.error(f"CodingAgent raw code generation failed: {e}")
             raise
 
-    async def run_code(self, code: str, language: str) -> dict:
-        """Executes code via the Piston API and returns the output."""
-        LANG_MAP = {
-            'python': {'language': 'python', 'version': '3.10.0'},
-            'javascript': {'language': 'javascript', 'version': '1.32.3'},
-            'java': {'language': 'java', 'version': '15.0.2'},
-            'cpp': {'language': 'c++', 'version': '10.2.0'},
+    async def transform_code(self, code: str, language: str, action: str) -> str:
+        """Transforms code (debug/optimize) and returns pure code for diffing."""
+        logger.info(f"Transforming {language} code. Action: {action}")
+        
+        actions = {
+            "debug": "Find and fix any errors or bugs in this code. Output ONLY the corrected code.",
+            "optimize": "Optimize this code for better performance, memory usage, and readability. Output ONLY the optimized code."
         }
-        lang_config = LANG_MAP.get(language)
-        if not lang_config:
-            return {"stdout": "", "stderr": f"Language '{language}' is not supported for execution.", "code": -1}
-
-        payload = {
-            "language": lang_config["language"],
-            "version": lang_config["version"],
-            "files": [{"content": code}]
-        }
+        
+        instruction = actions.get(action, "Improve this code.")
+        sys_prompt = f"You are an expert AI programmer. {instruction} Output ONLY valid {language} code. Do not use markdown blocks (no ```). Do not include any explanations or conversational text. Your entire response must be valid {language} code."
+        
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": f"Here is the {language} code:\n\n{code}"}
+        ]
+        
         try:
-            async with httpx.AsyncClient(timeout=30) as client:
-                resp = await client.post("https://emkc.org/api/v2/piston/execute", json=payload)
-                resp.raise_for_status()
-                data = resp.json()
-                run = data.get("run", {})
-                return {
-                    "stdout": run.get("output", ""),
-                    "stderr": run.get("stderr", ""),
-                    "code": run.get("code", 0)
-                }
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Piston API error: {e}")
-            return {"stdout": "", "stderr": f"Execution service error: {e.response.status_code}", "code": -1}
+            raw_response = await self.llm.generate(messages)
+            
+            # Use the same stripping logic as generate_raw_code
+            clean_code = raw_response.strip()
+            if clean_code.startswith("```"):
+                lines = clean_code.splitlines()
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines and lines[-1].startswith("```"):
+                    lines = lines[:-1]
+                clean_code = "\n".join(lines).strip()
+                
+            return clean_code
+        except Exception as e:
+            logger.error(f"CodingAgent transform failed: {e}")
+            raise
+
+    async def run_code(self, code: str, language: str) -> dict:
+        """Executes code via local subprocess runner."""
+        try:
+            return await execute_code(code, language)
         except Exception as e:
             logger.error(f"Code execution failed: {e}")
             return {"stdout": "", "stderr": str(e), "code": -1}

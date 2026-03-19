@@ -239,15 +239,21 @@ export const resumeAPI = {
 
 // ── Interview Agent ──────────────────────────────────
 export const interviewAPI = {
-    generate: (role, interviewType, excludeQuestions = []) =>
+    generate: (role, interviewType, company = 'Generic', roundType = null, difficulty = 'Intermediate', excludeQuestions = [], userType = 'general', experienceYears = 0, numQuestions = 5) =>
         api.post('/interview/generate', { 
             role, 
+            company,
             interview_type: interviewType,
-            exclude_questions: excludeQuestions 
+            round_type: roundType,
+            difficulty,
+            exclude_questions: excludeQuestions,
+            user_type: userType,
+            experience_years: experienceYears,
+            num_questions: numQuestions
         }),
 
-    getFeedback: (role, question, userAnswer) =>
-        api.post('/interview/feedback', { role, question, user_answer: userAnswer }),
+    getFeedback: (role, company, question, userAnswer, roundType = null) =>
+        api.post('/interview/feedback', { role, company, question, user_answer: userAnswer, round_type: roundType }),
 
     getSuggestions: (questions) =>
         api.post('/interview/suggestions', questions),
@@ -259,6 +265,9 @@ export const interviewAPI = {
             context, 
             user_query: userQuery 
         }),
+
+    getFinalReport: (role, company, roundResults) =>
+        api.post('/interview/final-report', { role, company, round_results: roundResults }),
 };
 
 // ── Research Agent ─────────────────────────────────────────────────────────
