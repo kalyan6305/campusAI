@@ -239,7 +239,7 @@ export const resumeAPI = {
 
 // ── Interview Agent ──────────────────────────────────
 export const interviewAPI = {
-    generate: (role, interviewType, company = 'Generic', roundType = null, difficulty = 'Intermediate', excludeQuestions = [], userType = 'general', experienceYears = 0, numQuestions = 5) =>
+    generate: (role, interviewType, company = 'Generic', roundType = null, difficulty = 'Intermediate', excludeQuestions = [], userType = 'general', experienceYears = 0, numQuestions = 5, selectedTopic = null) =>
         api.post('/interview/generate', { 
             role, 
             company,
@@ -249,7 +249,8 @@ export const interviewAPI = {
             exclude_questions: excludeQuestions,
             user_type: userType,
             experience_years: experienceYears,
-            num_questions: numQuestions
+            num_questions: numQuestions,
+            selected_topic: selectedTopic
         }),
 
     getFeedback: (role, company, question, userAnswer, roundType = null) =>
@@ -266,8 +267,20 @@ export const interviewAPI = {
             user_query: userQuery 
         }),
 
-    getFinalReport: (role, company, roundResults) =>
-        api.post('/interview/final-report', { role, company, round_results: roundResults }),
+    getFinalReport: (role, company, roundResults, overallDimensionAvgs) =>
+        api.post('/interview/final-report', { role, company, round_results: roundResults, overall_dimension_avgs: overallDimensionAvgs }),
+
+    getRoundTopics: (company, roundType, role) =>
+        api.post('/interview/topics', { company, round_type: roundType, role }),
+
+    generateMCQ: (company, roundType, role, topic = null, n = 5, previousQuestions = []) =>
+        api.post('/interview/generate-mcq', { company, round_type: roundType, role, topic, n, previous_questions: previousQuestions }),
+
+    teachTopic: (company, role, roundType, topic) =>
+        api.post('/interview/teach', { company, role, round_type: roundType, topic }),
+
+    predictRounds: (company, role) =>
+        api.post('/interview/predict-rounds', { company, role }),
 };
 
 // ── Research Agent ─────────────────────────────────────────────────────────
