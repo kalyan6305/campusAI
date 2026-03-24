@@ -18,7 +18,8 @@ from app.models import (
     ChatSession, ChatMessage,
     CampusSession, CampusMessage,
     ToolsSession, ToolsMessage,
-    AgentsSession, AgentsMessage
+    AgentsSession, AgentsMessage,
+    User
 )
 from app.utils.exceptions import LLMError, NotFoundError
 from app.services import rag_document_service
@@ -39,6 +40,21 @@ MODEL_MAP = {
     "tools": (ToolsSession, ToolsMessage),
     "agents": (AgentsSession, AgentsMessage),
 }
+
+async def _generate_smart_title(user_message: str) -> str:
+    """Use the LLM to generate a 3-5 word professional title for the session."""
+    try:
+        llm = get_llm_provider()
+        messages = [
+            {"role": "system", "content": "You are a professional session titler. Generate a 3-5 word descriptive title for a chat based on the user's first message. Respond ONLY with the title. No quotes, no filler."},
+            {"role": "user", "content": f"User message: {user_message}"}
+        ]
+        title = await llm.generate(messages)
+        return title.strip().replace('"', '')[:80]
+    except Exception as e:
+        logger.warning(f"Smart titling failed: {e}")
+        return user_message[:80]
+
 
 def _get_models(module: str = "chat"):
     """Helper to return (SessionModel, MessageModel) for a given module."""
@@ -62,18 +78,71 @@ async def _get_session_with_messages(
     user_id: int,
     db: AsyncSession,
     module: str = "chat"
-) -> ChatSession:
-    """Fetch session with messages from the appropriate table, verify ownership."""
+) -> tuple[ChatSession, User]:
+    """Fetch session with messages from the appropriate table, verify ownership, and return user."""
     SessionModel, _ = _get_models(module)
     result = await db.execute(
         select(SessionModel)
         .options(selectinload(SessionModel.messages))
+        .options(selectinload(SessionModel.user))
         .where(SessionModel.id == session_id, SessionModel.user_id == user_id)
     )
     session = result.scalar_one_or_none()
     if session is None:
         raise NotFoundError(f"{module.capitalize()} session not found")
-    return session
+    return session, session.user
+
+
+def _apply_agent_context(agent, user: User, is_secondary: bool):
+    """Inject API key selection, user personalization, and BREVITY enforcement into an agent."""
+    agent.llm = get_llm_provider(is_secondary)
+
+    # Global "Helpful & Conversational" Instruction (Continuity Focused)
+    brevity_instruction = (
+        "--- SYSTEM ADAPTATION: HELPFUL & CONVERSATIONAL AI ASSISTANT ---\n"
+        "You are a helpful and conversational AI assistant. Your goal is to provide precise answers while maintaining natural continuity.\n"
+        "INSTRUCTIONS:\n"
+        "- Always answer based on the LATEST user message.\n"
+        "- Treat short replies (e.g., 'romantic', 'more', 'explain') as continuations of the previous conversation.\n"
+        "- Stay on the same topic unless the user clearly changes it.\n"
+        "- Do NOT introduce unrelated topics or information.\n"
+        "- Ignore any irrelevant context completely.\n"
+        "- Keep answers clear, direct, and natural.\n"
+        "RESPONSE STYLE:\n"
+        "- Give a precise and relevant answer.\n"
+        "- Maintain continuity with the previous conversation.\n"
+        "- Optionally ask ONE short follow-up question if appropriate.\n\n"
+    )
+    
+    if hasattr(agent, "system_prompt"):
+        # Prepend brevity instruction
+        agent.system_prompt = brevity_instruction + agent.system_prompt
+
+    if not user:
+        return
+        
+    p_parts = []
+    if getattr(user, "nickname", None): p_parts.append(f"Name: {user.nickname}")
+    if getattr(user, "occupation", None): p_parts.append(f"Role: {user.occupation}")
+    if getattr(user, "about_me", None): p_parts.append(f"About: {user.about_me}")
+    
+    personalization = ""
+    if p_parts:
+        personalization += "--- USER PROFILE ---\n" + "\n".join(p_parts) + "\n\n"
+    
+    if getattr(user, "custom_instructions", None):
+        personalization += "--- CRITICAL USER INSTRUCTIONS ---\n"
+        personalization += f"STRICTLY FOLLOW THESE INSTRUCTIONS FOR EVERY RESPONSE:\n{user.custom_instructions}\n\n"
+    
+    if personalization and hasattr(agent, "system_prompt"):
+        # Prepend personalization to have maximum context influence
+        agent.system_prompt = personalization + agent.system_prompt
+        
+    # Language Enforcement
+    lang = getattr(user, "language", "english").lower()
+    if lang not in ["english", "auto"] and hasattr(agent, "system_prompt"):
+        lang_instruction = f"\n\n--- LANGUAGE REQUIREMENT ---\nIMPORTANT: RESPOND ENTIRELY IN {lang.upper()}. DO NOT USE ANY OTHER LANGUAGE UNLESS EXPLICITLY ASKED TO TRANSLATE.\n"
+        agent.system_prompt += lang_instruction
 
 
 def _build_llm_messages(session: ChatSession) -> list[dict]:
@@ -106,9 +175,11 @@ async def process_chat(
     # Map academics module to academic agent mode
     if module == "academics":
         mode = "academic"
+        
+    is_secondary = (metadata.get("module") != "chat") if metadata else False
 
     SessionModel, MessageModel = _get_models(module)
-    session = await _get_session_with_messages(session_id, user_id, db, module=module)
+    session, user = await _get_session_with_messages(session_id, user_id, db, module=module)
 
     # Persist user message
     user_msg = MessageModel(
@@ -120,9 +191,7 @@ async def process_chat(
     await db.flush()
     session.messages.append(user_msg)
 
-    # Call LLM
-    llm = get_llm_provider()
-    messages = _build_llm_messages(session)
+    session.messages.append(user_msg)
 
     # RAG framework check (already present)
     rag_context = await rag_service.query_knowledge_by_regulation(user_message)
@@ -147,12 +216,15 @@ async def process_chat(
                 reply_text = "Student not found in the dataset."
         elif mode == "coding":
             coding_agent = CodingAgent()
+            _apply_agent_context(coding_agent, user, is_secondary)
             reply_text = await coding_agent.generate_response(user_message)
         elif mode == "study_planner":
             study_agent = StudyPlannerAgent()
+            _apply_agent_context(study_agent, user, is_secondary)
             reply_text = await study_agent.generate_response(user_message)
         else:
             research_agent = ResearchAgent()
+            _apply_agent_context(research_agent, user, is_secondary)
             reply_text = await research_agent.research(user_message, context_str)
     except Exception as exc:
         logger.error("Agent generate failed: %s", exc)
@@ -170,7 +242,7 @@ async def process_chat(
 
     # Auto-title the session from first exchange
     if len(session.messages) <= 2: # User + Assistant
-        session.title = user_message[:80]
+        session.title = await _generate_smart_title(user_message)
         await db.flush()
     
     await db.commit()
@@ -199,9 +271,11 @@ async def process_chat_stream(
     # Map academics module to academic agent mode
     if module == "academics":
         mode = "academic"
+        
+    is_secondary = (metadata.get("module") != "chat") if metadata else False
 
     SessionModel, MessageModel = _get_models(module)
-    session = await _get_session_with_messages(session_id, user_id, db, module=module)
+    session, user = await _get_session_with_messages(session_id, user_id, db, module=module)
 
     user_msg = MessageModel(
         session_id=session_id,
@@ -260,27 +334,32 @@ async def process_chat_stream(
                 
         elif mode == "career":
             career_agent = CareerAgent()
+            _apply_agent_context(career_agent, user, is_secondary)
             async for token in career_agent.stream_response(user_id, user_message, db):
                 full_reply.append(token)
                 yield {"mode": mode, "token": token}
         elif mode == "academic":
             academic_agent = AcademicAgent()
+            _apply_agent_context(academic_agent, user, is_secondary)
             async for token in academic_agent.stream_response(user_message, context_str):
                 full_reply.append(token)
                 yield {"mode": mode, "token": token}
         elif mode == "coding":
             coding_agent = CodingAgent()
+            _apply_agent_context(coding_agent, user, is_secondary)
             async for token in coding_agent.stream_response(user_message):
                 full_reply.append(token)
                 yield {"mode": mode, "token": token}
         elif mode == "study_planner":
             study_agent = StudyPlannerAgent()
+            _apply_agent_context(study_agent, user, is_secondary)
             async for token in study_agent.stream_response(user_message):
                 full_reply.append(token)
                 yield {"mode": mode, "token": token}
         else:
             # Default fallback to ResearchAgent
             research_agent = ResearchAgent()
+            _apply_agent_context(research_agent, user, is_secondary)
             async for token in research_agent.stream_research(user_message, context_str, web_context):
                 full_reply.append(token)
                 yield {"mode": mode, "token": token}
@@ -301,7 +380,7 @@ async def process_chat_stream(
     db.add(assistant_msg)
 
     if len(session.messages) <= 2:
-        session.title = user_message[:80]
+        session.title = await _generate_smart_title(user_message)
 
     await db.commit()
     logger.info("Stream completed: session=%d chars=%d", session_id, len(reply_text))

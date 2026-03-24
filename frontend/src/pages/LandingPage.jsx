@@ -1,6 +1,6 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
+import { Sparkles, ArrowRight, ChevronRight, GraduationCap, Search, Bot, Map } from 'lucide-react';
 
 const LandingPage = () => {
     return (
@@ -22,7 +22,7 @@ const LandingPage = () => {
                     <div className="grid lg:grid-cols-5 gap-12 items-center">
                         <div className="lg:col-span-3 text-left animate-slide-up">
                             <div className="hero-badge group cursor-default">
-                                <span className="text-blue-400">✦</span>
+                                <Sparkles className="w-3 h-3 text-blue-400" />
                                 <span>The Future of Education</span>
                             </div>
                             
@@ -40,7 +40,7 @@ const LandingPage = () => {
                                 </Link>
                                 <button className="btn-hero-ghost">
                                     Explore Features
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-1"><path d="m9 18 6-6-6-6"/></svg>
+                                    <ChevronRight className="ml-1 w-[18px] h-[18px]" />
                                 </button>
                             </div>
                         </div>
@@ -78,7 +78,7 @@ const LandingPage = () => {
                             <div className="flex flex-col md:flex-row h-full">
                                 <div className="md:w-3/5 z-10">
                                     <div className="feature-icon-wrapper">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4.5V19m-4-7h8"/><circle cx="12" cy="12" r="10"/></svg>
+                                        <GraduationCap className="w-6 h-6" />
                                     </div>
                                     <h4 className="text-3xl font-bold text-white mb-4">Academic Intelligence</h4>
                                     <p className="text-gray-400 text-lg leading-relaxed mb-8">
@@ -98,7 +98,7 @@ const LandingPage = () => {
                         {/* 2. AI Research Tools (Small) */}
                         <div className="feature-card">
                             <div className="feature-icon-wrapper">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                                <Search className="w-6 h-6" />
                             </div>
                             <h4 className="text-xl font-bold text-white mb-4">AI Research Tools</h4>
                             <p className="text-gray-400 text-sm leading-relaxed">
@@ -109,7 +109,7 @@ const LandingPage = () => {
                         {/* 3. Multi-Agent Hub (Small) */}
                         <div className="feature-card">
                             <div className="feature-icon-wrapper">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                <Bot className="w-6 h-6" />
                             </div>
                             <h4 className="text-xl font-bold text-white mb-4">Multi-Agent Hub</h4>
                             <p className="text-gray-400 text-sm leading-relaxed">
@@ -122,7 +122,7 @@ const LandingPage = () => {
                             <div className="flex flex-col md:flex-row h-full">
                                 <div className="md:w-3/5 z-10">
                                     <div className="feature-icon-wrapper">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16.2 7.8 7.8 16.2"/><path d="m7.8 7.8 8.4 8.4"/></svg>
+                                        <Map className="w-6 h-6" />
                                     </div>
                                     <h4 className="text-3xl font-bold text-white mb-4">Campus Life</h4>
                                     <p className="text-gray-400 text-lg leading-relaxed mb-8">
@@ -130,7 +130,7 @@ const LandingPage = () => {
                                     </p>
                                     <Link to="/campus" className="inline-flex items-center text-blue-400 hover:text-blue-300 font-bold transition-colors group">
                                         Explore Campus Mode
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ml-2 transform group-hover:translate-x-1 transition-transform"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                                        <ArrowRight className="ml-2 w-5 h-5 transform group-hover:translate-x-1 transition-transform" />
                                     </Link>
                                 </div>
                                 <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none overflow-hidden rounded-3xl">

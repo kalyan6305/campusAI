@@ -1,4 +1,5 @@
 import React from 'react';
+import { Plus, Mic, Trash2 } from 'lucide-react';
 
 const VoiceSidebar = ({
     voiceState = 'idle',
@@ -33,9 +34,7 @@ const VoiceSidebar = ({
                         className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                         title="New voice session"
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
+                        <Plus className="w-4 h-4" />
                     </button>
                 </div>
 
@@ -102,7 +101,7 @@ const VoiceSidebar = ({
                                     }`}
                                 >
                                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        <span className="text-[10px] flex-shrink-0">🎙️</span>
+                                        <Mic className="w-3 h-3 text-gray-400" />
                                         <span className="text-[10px] text-gray-700 dark:text-gray-300 truncate font-medium">
                                             {session.title}
                                         </span>
@@ -115,9 +114,7 @@ const VoiceSidebar = ({
                                         className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-0.5"
                                         title="Delete session"
                                     >
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
+                                        <Trash2 className="w-3 h-3" />
                                     </button>
                                 </div>
                             ))

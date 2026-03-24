@@ -3,6 +3,7 @@
  */
 import { useState } from 'react';
 import { LoginForm, RegisterForm } from '../components/auth/AuthForms';
+import { GraduationCap } from 'lucide-react';
 
 export default function AuthPage() {
     const [isLogin, setIsLogin] = useState(true);
@@ -18,8 +19,8 @@ export default function AuthPage() {
             <div className="relative card-standard w-full max-w-md bg-white dark:bg-[#0d1117] shadow-xl border border-gray-100 dark:border-white/5 p-8 rounded-3xl">
                 {/* Logo */}
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                        <span className="text-3xl">🎓</span>
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 text-white">
+                        <GraduationCap className="w-10 h-10" />
                     </div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Campus AI</h1>
                     <p className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-widest mt-2">

@@ -228,11 +228,10 @@ const ResearchAgentUI = () => {
                                 key={m.id}
                                 onClick={() => handleModeSwitch(m.id)}
                                 disabled={isAnalyzing}
-                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all border ${
-                                    isActive
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all border ${isActive
                                         ? `${mc.tab} border-transparent shadow-md`
                                         : `text-gray-500 dark:text-gray-400 border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/30 ${mc.tabHover}`
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
                             >
                                 <span>{m.icon}</span>
                                 <span>{m.label}</span>
@@ -267,11 +266,10 @@ const ResearchAgentUI = () => {
                                     <button
                                         key={t.value}
                                         onClick={() => setWritingType(t.value)}
-                                        className={`px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
-                                            writingType === t.value
+                                        className={`px-3 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${writingType === t.value
                                                 ? `${colors.tab} border-transparent`
                                                 : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-gray-700 hover:border-gray-200 dark:hover:border-gray-600'
-                                        }`}
+                                            }`}
                                     >
                                         {t.label}
                                     </button>
@@ -292,11 +290,10 @@ const ResearchAgentUI = () => {
                                     onChange={(e) => setFile(e.target.files?.[0] || null)}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 />
-                                <div className={`p-5 border-2 border-dashed rounded-2xl text-center transition-all ${
-                                    file
+                                <div className={`p-5 border-2 border-dashed rounded-2xl text-center transition-all ${file
                                         ? 'border-blue-400 bg-blue-50/30 dark:bg-blue-900/10'
                                         : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 group-hover:border-blue-300'
-                                }`}>
+                                    }`}>
                                     <p className="text-lg mb-1">{file ? '📎' : '📂'}</p>
                                     <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">
                                         {file ? file.name : 'Click to upload PDF or DOCX'}
@@ -329,11 +326,10 @@ const ResearchAgentUI = () => {
                     <button
                         onClick={handleAnalyze}
                         disabled={isAnalyzing || !canSubmit}
-                        className={`w-full py-4 rounded-2xl font-black uppercase tracking-[0.15em] text-xs transition-all shadow-xl text-white ${
-                            isAnalyzing || !canSubmit
+                        className={`w-full py-4 rounded-2xl font-black uppercase tracking-[0.15em] text-xs transition-all shadow-xl text-white ${isAnalyzing || !canSubmit
                                 ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 shadow-none'
                                 : `${colors.btn} shadow-lg`
-                        }`}
+                            }`}
                     >
                         {isAnalyzing ? (
                             <span className="flex items-center justify-center gap-2">
@@ -436,7 +432,8 @@ const ResearchAgentUI = () => {
                 </div>
             </div>
 
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 .research-output h1 { font-size: 1.5rem; font-weight: 900; margin-bottom: 1rem; color: #111827; }
                 .dark .research-output h1 { color: #f9fafb; }
                 .research-output h2 { font-size: 1.1rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #059669; margin-top: 1.5rem; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid #d1fae5; }

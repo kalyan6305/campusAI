@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { jobApplyAPI } from '../../services/api';
 import useAuthStore from '../../store/authStore';
+import { Target, MapPin, ExternalLink, SearchX, FileText, CheckCircle2 } from 'lucide-react';
 
 const JobApplyAgentUI = () => {
     // Step 1: Search State
@@ -10,11 +11,11 @@ const JobApplyAgentUI = () => {
     const [jobs, setJobs] = useState([]);
     const [hasSearched, setHasSearched] = useState(false);
     const { user } = useAuthStore();
-    
+
     // Step 2 & 3: Selection & Upload State
     const [selectedJob, setSelectedJob] = useState(null);
     const [file, setFile] = useState(null);
-    
+
     // Step 4: Processing State
     const [isProcessing, setIsProcessing] = useState(false);
     const [status, setStatus] = useState('');
@@ -24,7 +25,7 @@ const JobApplyAgentUI = () => {
         if (!role) return;
         setIsSearching(true);
         setJobs([]);
-        
+
         // Mock user profile if not fully available in store
         const userProfile = {
             level: "fresher", // Default level
@@ -36,7 +37,7 @@ const JobApplyAgentUI = () => {
             const res = await jobApplyAPI.searchJobs(role, userProfile, "");
             const data = await res.json();
             setHasSearched(true);
-            
+
             if (data.status === 'SUCCESS' && data.jobs) {
                 setJobs(data.jobs);
             } else {
@@ -137,13 +138,13 @@ const JobApplyAgentUI = () => {
                     {/* Search Job Section */}
                     <div className="p-8 bg-white dark:bg-gray-800 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 animate-slide-up">
                         <div className="mb-6 text-center">
-                            <span className="text-4xl block mb-4">🎯</span>
+                            <Target className="w-12 h-12 text-blue-600 mx-auto mb-4" />
                             <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Job Assistant</h2>
                             <p className="text-gray-500 text-sm mt-2 font-medium">Empowering job seekers and graduates to find relevant opportunities.</p>
-                            
+
                         </div>
 
-                        
+
                         <div className="flex flex-col gap-2 mb-8">
                             <div className="flex flex-col md:flex-row gap-4">
                                 <input
@@ -156,11 +157,10 @@ const JobApplyAgentUI = () => {
                                 <button
                                     onClick={handleSearchJobs}
                                     disabled={isSearching || !role}
-                                    className={`px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
-                                        isSearching || !role
-                                        ? 'bg-gray-100 text-gray-400' 
-                                        : 'bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-500/20'
-                                    }`}
+                                    className={`px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${isSearching || !role
+                                            ? 'bg-gray-100 text-gray-400'
+                                            : 'bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-500/20'
+                                        }`}
                                 >
                                     {isSearching ? 'Searching...' : 'Find Jobs'}
                                 </button>
@@ -178,7 +178,7 @@ const JobApplyAgentUI = () => {
                                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Select a Job target</h3>
                                 <div className="grid gap-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
                                     {jobs.map((job, idx) => (
-                                        <div 
+                                        <div
                                             key={idx}
                                             onClick={() => setSelectedJob(job)}
                                             className="p-6 border border-gray-100 dark:border-gray-700 rounded-2xl hover:border-blue-500 dark:hover:border-blue-500 cursor-pointer transition-all bg-white dark:bg-gray-800 hover:shadow-lg dark:hover:shadow-blue-900/10 group relative"
@@ -189,16 +189,14 @@ const JobApplyAgentUI = () => {
                                                     <div className="flex flex-wrap items-center gap-2 mt-2">
                                                         <span className="text-[10px] font-bold text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-md">{job.company}</span>
                                                         <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                                                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                                            </svg>
+                                                            <MapPin className="h-3 w-3" />
                                                             {job.location}
                                                         </span>
                                                         <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 px-2 py-0.5 rounded-md uppercase tracking-widest">{job.source || 'Web Search'}</span>
                                                     </div>
                                                 </div>
                                                 {job.apply_link && (
-                                                    <a 
+                                                    <a
                                                         href={job.apply_link}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
@@ -207,9 +205,7 @@ const JobApplyAgentUI = () => {
                                                         title="Visit Job Posting"
                                                     >
                                                         <span>View Link</span>
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3 h-3">
-                                                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                                        </svg>
+                                                        <ExternalLink className="w-3 h-3" />
                                                     </a>
                                                 )}
                                             </div>
@@ -220,12 +216,12 @@ const JobApplyAgentUI = () => {
                             </div>
                         ) : hasSearched && !isSearching && (
                             <div className="p-10 text-center animate-fade-in bg-gray-50/50 dark:bg-gray-900/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-700">
-                                <span className="text-5xl block mb-4">🤷‍♂️</span>
+                                <SearchX className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                                 <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight mb-2">No Jobs Found</h3>
                                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 max-w-xs mx-auto">
                                     We couldn't find any official listings for "{role}". Try a different role!
                                 </p>
-                                <button 
+                                <button
                                     onClick={handleSearchJobs}
                                     className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
                                 >
@@ -244,7 +240,7 @@ const JobApplyAgentUI = () => {
                             ← Back to Jobs
                         </button>
                     </div>
-                    
+
                     <div className="p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-3xl">
                         <h3 className="text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2">Target Role</h3>
                         <p className="text-lg font-bold text-gray-900 dark:text-white">{selectedJob.title} @ <span className="opacity-70">{selectedJob.company}</span></p>
@@ -262,7 +258,7 @@ const JobApplyAgentUI = () => {
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             />
                             <div className="p-10 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-3xl text-center group-hover:border-blue-400 dark:group-hover:border-blue-500 transition-all bg-gray-50/50 dark:bg-gray-900/30">
-                                <span className="text-4xl mb-4 block">📄</span>
+                                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                                 <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
                                     {file ? file.name : 'Click or drop PDF/TXT file here'}
                                 </p>
@@ -273,11 +269,10 @@ const JobApplyAgentUI = () => {
                     <button
                         onClick={handleProcess}
                         disabled={isProcessing || !file}
-                        className={`w-full py-5 rounded-3xl font-black uppercase tracking-[0.2em] text-[11px] transition-all shadow-xl ${
-                            isProcessing || !file
+                        className={`w-full py-5 rounded-3xl font-black uppercase tracking-[0.2em] text-[11px] transition-all shadow-xl ${isProcessing || !file
                                 ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 shadow-none'
                                 : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/25'
-                        }`}
+                            }`}
                     >
                         {isProcessing ? status : 'Analyze & Tailor Resume'}
                     </button>
@@ -290,7 +285,7 @@ const JobApplyAgentUI = () => {
                     <div className="p-6 border-b border-gray-50 dark:border-gray-700/50 flex items-center justify-between bg-gray-50/50 dark:bg-gray-900/50">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-                                <span className="text-xl">✅</span>
+                                <CheckCircle2 className="w-6 h-6 text-green-600" />
                             </div>
                             <div>
                                 <h3 className="text-sm font-black text-gray-900 dark:text-gray-100 uppercase tracking-widest">Job Package Ready</h3>
@@ -308,9 +303,9 @@ const JobApplyAgentUI = () => {
                                     a: ({ node, ...props }) => {
                                         if (props.href && props.href.startsWith('/static/')) {
                                             return (
-                                                <a 
-                                                    href={`http://127.0.0.1:8000${props.href}`} 
-                                                    target="_blank" 
+                                                <a
+                                                    href={`http://127.0.0.1:8000${props.href}`}
+                                                    target="_blank"
                                                     rel="noopener noreferrer"
                                                 >
                                                     {props.children}
@@ -328,7 +323,8 @@ const JobApplyAgentUI = () => {
                 </div>
             )}
 
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 .markdown-results h1 { font-size: 1.8rem; font-weight: 900; margin: 2rem 0 1rem; color: #1e293b; }
                 .dark .markdown-results h1 { color: #f8fafc; }
                 .markdown-results h2 { font-size: 1.4rem; font-weight: 800; margin: 1.5rem 0 1rem; color: #3b82f6; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem;}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { resumeAPI } from '../../services/api';
+import { FileText, Settings, TrendingUp, Download } from 'lucide-react';
 
 const ResumeAgentUI = () => {
     // Pipeline States
@@ -90,7 +91,7 @@ const ResumeAgentUI = () => {
             {!results && !isProcessing && (
                 <div className="max-w-4xl mx-auto w-full space-y-8 animate-slide-up">
                     <header className="text-center">
-                        <span className="text-5xl block mb-4">📄</span>
+                        <FileText className="w-16 h-16 text-rose-500 mx-auto mb-4" />
                         <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Resume Optimization</h2>
                         <p className="text-gray-500 text-lg mt-2">Tailor your resume for maximum impact and ATS alignment.</p>
                     </header>
@@ -143,11 +144,10 @@ const ResumeAgentUI = () => {
                     <button
                         onClick={handleProcess}
                         disabled={!file || !jobDescription}
-                        className={`w-full py-6 rounded-3xl font-black uppercase tracking-[0.2em] text-xs transition-all shadow-xl ${
-                            !file || !jobDescription
+                        className={`w-full py-6 rounded-3xl font-black uppercase tracking-[0.2em] text-xs transition-all shadow-xl ${!file || !jobDescription
                                 ? 'bg-gray-100 dark:bg-gray-800 text-gray-400'
                                 : 'bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-rose-500/25'
-                        }`}
+                            }`}
                     >
                         Start Optimization Pipeline
                     </button>
@@ -157,7 +157,7 @@ const ResumeAgentUI = () => {
             {isProcessing && (
                 <div className="flex-grow flex flex-col items-center justify-center space-y-8 animate-pulse">
                     <div className="w-20 h-20 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center animate-bounce">
-                        <span className="text-3xl">⚙️</span>
+                        <Settings className="w-10 h-10 text-rose-500" />
                     </div>
                     <div className="text-center">
                         <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{status}</h3>
@@ -172,7 +172,7 @@ const ResumeAgentUI = () => {
                     <div className="lg:col-span-1 space-y-6">
                         <div className="p-8 bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden relative">
                             <div className="absolute top-0 right-0 p-6">
-                                <span className="text-4xl">📈</span>
+                                <TrendingUp className="w-8 h-8 text-gray-200 dark:text-gray-700" />
                             </div>
                             <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-6">ATS Match Score</h3>
                             <div className="flex items-end gap-2">
@@ -180,8 +180,8 @@ const ResumeAgentUI = () => {
                                 <span className="text-2xl font-black text-rose-500 pb-1">%</span>
                             </div>
                             <div className="mt-8 h-2 w-full bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full bg-gradient-to-r from-rose-500 to-rose-400 transition-all duration-1000" 
+                                <div
+                                    className="h-full bg-gradient-to-r from-rose-500 to-rose-400 transition-all duration-1000"
                                     style={{ width: `${results.match_score}%` }}
                                 />
                             </div>
@@ -215,7 +215,7 @@ const ResumeAgentUI = () => {
                         <div className="p-6 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 flex items-center justify-between shadow-sm">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-rose-100 dark:bg-rose-900/30 rounded-2xl">
-                                    <span className="text-2xl">📄</span>
+                                    <FileText className="w-8 h-8 text-rose-500" />
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Optimized Resume</h4>
@@ -226,16 +226,14 @@ const ResumeAgentUI = () => {
                                 <button onClick={reset} className="px-6 py-3 bg-gray-50 dark:bg-gray-900 text-gray-500 hover:text-gray-800 dark:hover:text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all">
                                     Reset
                                 </button>
-                                <a 
-                                    href={`http://127.0.0.1:8000${results.pdf_url}`} 
-                                    target="_blank" 
+                                <a
+                                    href={`http://127.0.0.1:8000${results.pdf_url}`}
+                                    target="_blank"
                                     rel="noopener noreferrer"
                                     className="px-8 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-rose-500/20 flex items-center gap-2"
                                 >
                                     <span>Download PDF</span>
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                                    </svg>
+                                    <Download className="w-3.5 h-3.5" />
                                 </a>
                             </div>
                         </div>
@@ -254,7 +252,8 @@ const ResumeAgentUI = () => {
                 </div>
             )}
 
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 .resume-preview { font-family: 'Inter', sans-serif; }
                 .resume-preview h1 { font-size: 2.5rem; font-weight: 900; margin-bottom: 2rem; border-bottom: 4px solid #f43f5e; display: inline-block; padding-bottom: 0.5rem; }
                 .resume-preview h2 { font-size: 1.25rem; font-weight: 800; text-transform: uppercase; tracking: 0.1em; color: #f43f5e; margin-top: 2rem; margin-bottom: 1rem; }

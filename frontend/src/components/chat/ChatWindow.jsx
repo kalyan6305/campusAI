@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import useChatStore from '../../store/chatStore';
 import MessageBubble from './MessageBubble';
+import { GraduationCap } from 'lucide-react';
 
 export default function ChatWindow() {
     const { getMessages, isStreaming, streamingContent, activeSessionId } = useChatStore();
@@ -15,8 +16,8 @@ export default function ChatWindow() {
         return (
             <div className="flex-1 flex items-center justify-center p-8 bg-gray-50/50 dark:bg-gray-800/30">
                 <div className="text-center animate-fade-in max-w-sm">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-3xl shadow-sm border border-blue-100 dark:border-blue-900/50">
-                        🎓
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm border border-blue-100 dark:border-blue-900/50">
+                        <GraduationCap className="w-10 h-10" />
                     </div>
                     <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2 font-sans tracking-tight">Campus AI Assistant</h2>
                     <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">

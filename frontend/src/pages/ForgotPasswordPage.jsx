@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authAPI } from '../services/api';
+import { KeyRound, Check, X, ArrowRight } from 'lucide-react';
 
 const ForgotPasswordPage = () => {
     const [email, setEmail] = useState('');
@@ -33,8 +34,8 @@ const ForgotPasswordPage = () => {
 
                 <div className="relative bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-10 shadow-2xl">
                     <div className="text-center mb-10">
-                        <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-2xl mb-6 text-4xl border border-blue-100 dark:border-blue-800/50 shadow-inner">
-                            🔐
+                        <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-2xl mb-6 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50 shadow-inner">
+                            <KeyRound className="w-10 h-10" />
                         </div>
                         <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight uppercase">Forgot Password</h1>
                         <p className="mt-3 text-gray-500 dark:text-gray-400 font-bold text-sm uppercase tracking-widest">
@@ -47,7 +48,7 @@ const ForgotPasswordPage = () => {
                                 ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
                                 : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
                             }`}>
-                            <span>{status.type === 'success' ? '✔' : '✖'}</span>
+                            <span>{status.type === 'success' ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}</span>
                             {status.message}
                         </div>
                     )}
@@ -77,7 +78,7 @@ const ForgotPasswordPage = () => {
                             ) : (
                                 <>
                                     <span>Initialize Recovery</span>
-                                    <span className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">→</span>
+                                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                                 </>
                             )}
                         </button>

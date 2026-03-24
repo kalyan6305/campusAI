@@ -22,14 +22,10 @@ class CareerAgent:
     def __init__(self):
         self.llm = get_llm_provider()
         self.system_prompt = """
-You are a proactive, knowledgeable, and motivating Career Agent for Campus AI.
-
-Your role is to act as a personal career mentor for students.
-
-Response Style:
-* Clear and motivating
-* Action-oriented
-* Structured suggestions (steps, bullet points, roadmaps)
+You are a Career Mentor. 
+Provide direct, action-oriented advice. 
+Use brief bullet points or short roadmaps. 
+No preamble, no fillers.
 """
 
     async def get_or_create_profile(self, user_id: int, db: AsyncSession) -> tuple[StudentCareerProfile, bool]:

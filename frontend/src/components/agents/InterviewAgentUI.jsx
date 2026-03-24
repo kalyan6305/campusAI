@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { interviewAPI } from '../../services/api';
+import { Target, Flag, BarChart4 } from 'lucide-react';
 
 const InterviewAgentUI = () => {
     // Stage: 'selection' | 'questions' | 'practice' | 'round_summary' | 'results'
@@ -47,24 +48,24 @@ const InterviewAgentUI = () => {
         }
         if (isAppend) setIsGeneratingMore(true);
         else setIsGenerating(true);
-        
+
         try {
             const rounds = companyRoundPatterns[company] || companyRoundPatterns["Generic"];
             const currentRound = rounds[roundIdx];
             const excludeList = isAppend ? questions.map(q => q.question) : [];
-            
+
             const res = await interviewAPI.generate(
-                role, 
-                interviewType, 
-                company, 
-                currentRound, 
-                'Intermediate', 
-                excludeList, 
-                userType, 
+                role,
+                interviewType,
+                company,
+                currentRound,
+                'Intermediate',
+                excludeList,
+                userType,
                 experienceYears,
                 5
             );
-            
+
             if (isAppend) {
                 setQuestions([...questions, ...res.data.questions]);
             } else {
@@ -86,9 +87,9 @@ const InterviewAgentUI = () => {
         setIsClarifying(true);
         try {
             const res = await interviewAPI.clarifyDoubt(
-                role, 
-                questionObj.question, 
-                questionObj.suggested_answer, 
+                role,
+                questionObj.question,
+                questionObj.suggested_answer,
                 doubtQuery
             );
             setDoubtResponse(res.data);
@@ -103,7 +104,7 @@ const InterviewAgentUI = () => {
     const handleStudyRound = () => {
         const rounds = companyRoundPatterns[company] || companyRoundPatterns["Generic"];
         const roundName = rounds[currentRoundIndex];
-        
+
         const roundResult = {
             round: roundName,
             score: 75,
@@ -117,7 +118,7 @@ const InterviewAgentUI = () => {
 
         const updatedResults = [...allRoundResults, roundResult];
         setAllRoundResults(updatedResults);
-        
+
         if (currentRoundIndex < rounds.length - 1) {
             handleGenerate(currentRoundIndex + 1);
         } else {
@@ -148,8 +149,8 @@ const InterviewAgentUI = () => {
             };
 
             const res = await interviewAPI.finalReport(
-                role, 
-                company, 
+                role,
+                company,
                 resultsToUse,
                 overallAverages
             );
@@ -187,7 +188,7 @@ const InterviewAgentUI = () => {
             {stage === 'selection' && (
                 <div className="max-w-4xl mx-auto w-full space-y-8 animate-slide-up">
                     <header className="text-center">
-                        <span className="text-5xl block mb-4">🎯</span>
+                        <Target className="w-16 h-16 text-blue-600 mx-auto mb-4" />
                         <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Interview Preparation</h2>
                         <p className="text-gray-500 text-lg mt-2">Master your next interview with role-specific questions and expert feedback.</p>
                     </header>
@@ -309,9 +310,9 @@ const InterviewAgentUI = () => {
             {stage === 'round_summary' && allRoundResults.length > 0 && (
                 <div className="max-w-4xl mx-auto w-full space-y-8 animate-slide-up">
                     <header className="text-center">
-                        <span className="text-5xl block mb-4">🏁</span>
+                        <Flag className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
                         <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Round Completed</h2>
-                        <p className="text-gray-500 text-lg mt-2 font-medium">Finished the <span className="text-blue-600 font-black">{allRoundResults[allRoundResults.length-1].round}</span> round.</p>
+                        <p className="text-gray-500 text-lg mt-2 font-medium">Finished the <span className="text-blue-600 font-black">{allRoundResults[allRoundResults.length - 1].round}</span> round.</p>
                     </header>
                     <div className="p-10 bg-white dark:bg-gray-800 rounded-[3rem] border border-gray-100 shadow-2xl space-y-10 text-center">
                         <p className="text-gray-600 dark:text-gray-300 font-medium">Round summary completed. Proceed for final results.</p>
@@ -325,7 +326,7 @@ const InterviewAgentUI = () => {
             {stage === 'results' && finalReport && (
                 <div className="max-w-6xl mx-auto w-full space-y-10 pb-10 animate-slide-up">
                     <header className="text-center">
-                        <span className="text-5xl block mb-6">📊</span>
+                        <BarChart4 className="w-16 h-16 text-indigo-600 mx-auto mb-6" />
                         <h2 className="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{company} Interview Report</h2>
                     </header>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

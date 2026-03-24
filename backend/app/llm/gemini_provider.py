@@ -31,9 +31,15 @@ class GeminiProvider(LLMProvider):
     Includes automatic exponential-backoff retry on 429 rate-limit errors.
     """
 
-    def __init__(self):
+    def __init__(self, is_secondary: bool = False):
         settings = get_settings()
-        genai.configure(api_key=settings.GEMINI_API_KEY)
+        api_key = settings.GEMINI_SECONDARY_API_KEY if is_secondary else settings.GEMINI_API_KEY
+        
+        # Fallback to primary if secondary is missing
+        if is_secondary and not api_key:
+            api_key = settings.GEMINI_API_KEY
+            
+        genai.configure(api_key=api_key)
         self.model_name = settings.LLM_MODEL or "gemini-1.5-flash"
         self.model = genai.GenerativeModel(self.model_name)
 

@@ -7,6 +7,7 @@ import JobApplyAgentUI from '../components/agents/JobApplyAgentUI';
 import ResumeAgentUI from '../components/agents/ResumeAgentUI';
 import InterviewAgentUI from '../components/agents/InterviewAgentUI';
 import CodingAgentUI from '../components/agents/CodingAgentUI';
+import { Rocket, Code2, Target, FileText, Calendar, Search, MessageSquare, GraduationCap } from 'lucide-react';
 
 const StudyPlannerAgentUI = React.lazy(() => import('../components/agents/StudyPlannerAgentUI'));
 
@@ -23,13 +24,11 @@ const AgentsPage = () => {
     }, [loadSessions, clearActiveSession]);
 
     const agents = [
-        { id: 'job-apply', name: 'Job Assistant Agent', icon: '🚀', description: 'Find relevant jobs for seekers & graduates. Search by role, filter by location, and get direct application links.', color: 'blue' },
-        { id: 'coding', name: 'Coding Agent', icon: '💻', description: 'Generate code, debug programs, and practice coding with an AI-powered coding workspace.', color: 'amber' },
-        { id: 'interview', name: 'Interview Prep Agent', icon: '🎯', description: 'Practice role-specific interview questions and get expert feedback to ace your next job.', color: 'blue' },
-        { id: 'resume', name: 'Resume Agent', icon: '📄', description: 'Optimize your resume for a specific job role by comparing it with a job description and generating a tailored version.', color: 'rose' },
-        { id: 'study_planner', name: 'Study Planner Agent', icon: '📅', description: 'Create personalized study schedules, break down complex topics, and get time management tips.', color: 'emerald' },
-        // { id: 'analysis', name: 'Analysis Agent', icon: '📊', description: 'Data trends and insight generation.', color: 'amber' },
-        // { id: 'current_affairs', name: 'Current Affairs Agent', icon: '📰', description: 'Real-time global news & developments.', color: 'rose' }
+        { id: 'job-apply', name: 'Job Assistant Agent', icon: <Rocket className="w-8 h-8" />, description: 'Find relevant jobs for seekers & graduates. Search by role, filter by location, and get direct application links.', color: 'blue' },
+        { id: 'coding', name: 'Coding Agent', icon: <Code2 className="w-8 h-8" />, description: 'Generate code, debug programs, and practice coding with an AI-powered coding workspace.', color: 'amber' },
+        { id: 'interview', name: 'Interview Prep Agent', icon: <Target className="w-8 h-8" />, description: 'Practice role-specific interview questions and get expert feedback to ace your next job.', color: 'blue' },
+        { id: 'resume', name: 'Resume Agent', icon: <FileText className="w-8 h-8" />, description: 'Optimize your resume for a specific job role by comparing it with a job description and generating a tailored version.', color: 'rose' },
+        { id: 'study_planner', name: 'Study Planner Agent', icon: <Calendar className="w-8 h-8" />, description: 'Create personalized study schedules, break down complex topics, and get time management tips.', color: 'emerald' },
     ];
 
     const activeAgent = agents.find(a => a.id === selectedAgent);
@@ -93,7 +92,10 @@ const AgentsPage = () => {
                             </button>
                             <div>
                                 <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight flex items-center gap-2">
-                                    {activeAgent.icon} {activeAgent.name}
+                                    <span className="w-8 h-8 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                        {activeAgent.icon}
+                                    </span>
+                                    {activeAgent.name}
                                 </h1>
                                 <div className="flex items-center gap-2 mt-1">
                                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />

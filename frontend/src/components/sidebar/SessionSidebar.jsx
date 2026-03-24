@@ -5,6 +5,9 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useChatStore from '../../store/chatStore';
 import useAuthStore from '../../store/authStore';
+import PersonalizationModal from '../layout/PersonalizationModal';
+import GeneralSettingsModal from '../layout/GeneralSettingsModal';
+import { GraduationCap, Sparkles, User as UserIcon, Settings, HelpCircle, LogOut, ChevronUp } from 'lucide-react';
 
 export default function SessionSidebar({ isOpen, setIsOpen }) {
     const { getSessions, activeSessionId, loadSessions, createSession, selectSession, deleteSession, renameSession } = useChatStore();
@@ -14,7 +17,22 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
 
     const [editingSessionId, setEditingSessionId] = useState(null);
     const [editTitle, setEditTitle] = useState('');
+    const [isPersonalizationOpen, setIsPersonalizationOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const editInputRef = useRef(null);
+    const profileMenuRef = useRef(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+                setIsProfileMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     useEffect(() => {
         loadSessions('chat');
@@ -65,8 +83,8 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
             {/* Header */}
             <div className={`p-4 border-b border-gray-50 dark:border-gray-800 bg-gray-50/20 dark:bg-gray-800/20 ${!isOpen && 'flex flex-col items-center'}`}>
                 <div className={`flex items-center gap-2 ${isOpen ? 'mb-4' : 'mb-0'}`}>
-                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0">
-                        <span className="text-sm">🎓</span>
+                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0 text-white">
+                        <GraduationCap className="w-5 h-5" />
                     </div>
                     {isOpen && (
                         <div className="min-w-0">
@@ -176,27 +194,123 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
             </div>
 
             {/* User profile */}
-            <div className={`p-3 border-t border-gray-50 dark:border-gray-800 bg-gray-50/20 dark:bg-gray-800/10 ${!isOpen && 'flex flex-col items-center'}`}>
-                <div className={`flex items-center gap-2 px-1 ${!isOpen && 'flex-col'}`}>
-                    <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[10px] font-black text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/20 uppercase flex-shrink-0">
-                        {user?.email?.[0]?.toUpperCase() || 'U'}
+            <div className="p-3 border-t border-gray-50 dark:border-gray-800 bg-gray-50/20 dark:bg-gray-800/10 relative" ref={profileMenuRef}>
+                {/* Profile Dropdown Menu */}
+                {isProfileMenuOpen && (
+                    <div className={`absolute bottom-full left-4 mb-2 w-56 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-2xl p-2 z-[60] animate-slide-up backdrop-blur-xl ${!isOpen && 'left-1'}`}>
+                        <div className="space-y-1">
+                            <button
+                                onClick={() => {
+                                    setIsPersonalizationOpen(true);
+                                    setIsProfileMenuOpen(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 text-gray-700 dark:text-gray-200 transition-all group"
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
+                                    <Sparkles className="w-4 h-4" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Personalization</p>
+                                    <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Custom AI Logic</p>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    navigate('/profile');
+                                    setIsProfileMenuOpen(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-700 dark:text-gray-200 transition-all group"
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                                    <UserIcon className="w-4 h-4" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Profile</p>
+                                    <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">My Account</p>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    setIsSettingsOpen(true);
+                                    setIsProfileMenuOpen(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all group"
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:scale-110 transition-transform">
+                                    <Settings className="w-4 h-4" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Settings</p>
+                                    <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">General Preferences</p>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => {
+                                    navigate('/help');
+                                    setIsProfileMenuOpen(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition-all group"
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:scale-110 transition-transform">
+                                    <HelpCircle className="w-4 h-4" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Help</p>
+                                    <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Support & FAQs</p>
+                                </div>
+                            </button>
+
+                            <div className="h-px bg-gray-50 dark:bg-gray-700 my-1 mx-2" />
+
+                            <button
+                                onClick={() => {
+                                    logout();
+                                    setIsProfileMenuOpen(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-all group"
+                            >
+                                <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
+                                    <LogOut className="w-4 h-4" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Logout</p>
+                                    <p className="text-[8px] text-red-400/60 font-bold uppercase tracking-widest mt-0.5">Terminate Session</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                <div
+                    className={`flex items-center gap-2 px-1 py-1 rounded-xl hover:bg-white dark:hover:bg-gray-800 cursor-pointer group/profile transition-all ${!isOpen && 'flex-col'}`}
+                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                >
+                    <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[10px] font-black text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/20 uppercase flex-shrink-0 group-hover/profile:scale-110 transition-transform">
+                        {(user?.nickname || user?.email || 'U')[0].toUpperCase()}
                     </div>
                     {isOpen && (
                         <div className="flex-1 min-w-0">
-                            <p className="text-[10px] font-black text-gray-700 dark:text-gray-300 truncate tracking-tight">{user?.email || 'User'}</p>
+                            <p className="text-[10px] font-black text-gray-700 dark:text-gray-300 truncate tracking-tight">{user?.nickname || user?.email?.split('@')[0] || 'User'}</p>
+                            <p className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter">My Account</p>
                         </div>
                     )}
-                    <button
-                        onClick={logout}
-                        className={`p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 rounded-lg transition-all ${!isOpen && 'mt-2'}`}
-                        title="Sign out"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
-                        </svg>
-                    </button>
+                    <div className={`text-gray-400 transition-transform duration-300 ${isProfileMenuOpen ? 'rotate-180' : ''}`}>
+                        <ChevronUp className="w-4 h-4" />
+                    </div>
                 </div>
             </div>
+
+            <PersonalizationModal
+                isOpen={isPersonalizationOpen}
+                onClose={() => setIsPersonalizationOpen(false)}
+            />
+            <GeneralSettingsModal
+                isOpen={isSettingsOpen}
+                onClose={() => setIsSettingsOpen(false)}
+            />
         </aside>
     );
 }

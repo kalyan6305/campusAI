@@ -40,6 +40,7 @@ export const authAPI = {
         api.post('/auth/login', { email, password }),
 
     me: () => api.get('/auth/me'),
+    updateProfile: (data) => api.patch('/auth/me', data),
     getStats: () => api.get('/auth/stats'),
     deleteHistory: () => api.delete('/auth/history'),
     requestPasswordReset: (email) => api.post('/auth/forgot-password', { email }),

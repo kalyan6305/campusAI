@@ -29,6 +29,9 @@ export default {
                 },
                 accent: {
                     brown: '#a26d5d',
+                    primary: 'var(--accent-primary)',
+                    hover: 'var(--accent-primary-hover)',
+                    light: 'var(--accent-primary-light)',
                 },
             },
             fontFamily: {

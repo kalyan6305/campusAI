@@ -53,6 +53,19 @@ const useAuthStore = create((set) => ({
         }
     },
 
+    updateProfile: async (profileData) => {
+        set({ isLoading: true, error: null });
+        try {
+            const { data } = await authAPI.updateProfile(profileData);
+            set({ user: data, isLoading: false });
+            return data;
+        } catch (err) {
+            const msg = err.response?.data?.detail || 'Profile update failed';
+            set({ error: msg, isLoading: false });
+            throw err;
+        }
+    },
+
     logout: () => {
         localStorage.removeItem('access_token');
         set({ user: null, token: null });

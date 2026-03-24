@@ -11,8 +11,8 @@ from app.llm.base import LLMProvider
 
 
 @lru_cache
-def get_llm_provider() -> LLMProvider:
-    """Instantiate and cache the active LLM provider based on config."""
+def get_llm_provider(is_secondary: bool = False) -> LLMProvider:
+    """Instantiate and cache the active LLM provider based on config, using secondary key if specified."""
     settings = get_settings()
     provider = settings.LLM_PROVIDER.lower()
 
@@ -26,11 +26,11 @@ def get_llm_provider() -> LLMProvider:
 
     if provider == "gemini":
         from app.llm.gemini_provider import GeminiProvider
-        return GeminiProvider()
+        return GeminiProvider(is_secondary=is_secondary)
 
     if provider == "groq":
         from app.llm.groq_provider import GroqProvider
-        return GroqProvider()
+        return GroqProvider(is_secondary=is_secondary)
 
 
     raise ValueError(f"Unknown LLM_PROVIDER: {provider!r}")

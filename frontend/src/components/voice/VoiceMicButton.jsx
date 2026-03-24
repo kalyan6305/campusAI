@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Square, Loader2, Volume2, Mic } from 'lucide-react';
 
 const VoiceMicButton = ({ voiceState = 'idle', onClick, disabled = false }) => {
     const isListening = voiceState === 'listening';
@@ -48,24 +49,13 @@ const VoiceMicButton = ({ voiceState = 'idle', onClick, disabled = false }) => {
                 whileHover={!isDisabled ? { scale: 1.06 } : {}}
             >
                 {isListening ? (
-                    <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
-                        <rect x="6" y="6" width="12" height="12" rx="2" />
-                    </svg>
+                    <Square className="w-7 h-7 fill-current" />
                 ) : isProcessing ? (
-                    <svg className="w-7 h-7 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
+                    <Loader2 className="w-7 h-7 animate-spin" />
                 ) : isSpeaking ? (
-                    <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5.586V18.414a1 1 0 01-1.707.707L5.586 15z" />
-                    </svg>
+                    <Volume2 className="w-7 h-7" />
                 ) : (
-                    <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 10v2a7 7 0 01-14 0v-2" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 19v4m-4 0h8" />
-                    </svg>
+                    <Mic className="w-7 h-7" />
                 )}
             </motion.button>
         </div>

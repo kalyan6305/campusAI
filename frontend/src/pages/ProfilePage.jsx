@@ -2,14 +2,23 @@ import React, { useState, useEffect } from 'react';
 import useThemeStore from '../store/themeStore';
 import useAuthStore from '../store/authStore';
 import { authAPI, sessionAPI } from '../services/api';
+import { Loader2, CheckCircle2, XCircle, Rocket, GraduationCap, Flame, MessageSquare, School, Wrench, Moon, Sun, Download, Trash2, ArrowRight } from 'lucide-react';
 
 const ProfilePage = () => {
     const { theme, toggleTheme } = useThemeStore();
-    const { user, logout } = useAuthStore();
+    const { user, logout, updateProfile } = useAuthStore();
     const [stats, setStats] = useState(null);
     const [activity, setActivity] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [resetStatus, setResetStatus] = useState({ type: '', message: '' });
+
+    const [profileData, setProfileData] = useState({
+        nickname: user?.nickname || '',
+        occupation: user?.occupation || '',
+        about_me: user?.about_me || '',
+        custom_instructions: user?.custom_instructions || ''
+    });
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
 
     const fetchDashboardData = async () => {
         try {
@@ -74,8 +83,31 @@ const ProfilePage = () => {
     };
 
     useEffect(() => {
-        if (user) fetchDashboardData();
+        if (user) {
+            fetchDashboardData();
+            setProfileData({
+                nickname: user.nickname || '',
+                occupation: user.occupation || '',
+                about_me: user.about_me || '',
+                custom_instructions: user.custom_instructions || ''
+            });
+        }
     }, [user]);
+
+    const handleSaveProfile = async (e) => {
+        e.preventDefault();
+        setIsSavingProfile(true);
+        try {
+            await updateProfile(profileData);
+            setResetStatus({ type: 'success', message: 'Personalization settings updated successfully.' });
+            setTimeout(() => setResetStatus({ type: '', message: '' }), 5000);
+        } catch (err) {
+            setResetStatus({ type: 'error', message: 'Failed to update settings.' });
+            setTimeout(() => setResetStatus({ type: '', message: '' }), 5000);
+        } finally {
+            setIsSavingProfile(false);
+        }
+    };
 
     if (!user || isLoading) {
         return (
@@ -89,10 +121,10 @@ const ProfilePage = () => {
     }
 
     const userData = {
-        name: user.full_name || user.email.split('@')[0],
+        name: user.nickname || user.full_name || user.email.split('@')[0],
         email: user.email,
-        role: user.role || 'Campus Resident',
-        avatar: (user.full_name || user.email)[0].toUpperCase(),
+        role: user.occupation || user.role || 'Campus Resident',
+        avatar: (user.nickname || user.full_name || user.email)[0].toUpperCase(),
         memberSince: new Date(user.created_at || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     };
 
@@ -122,7 +154,7 @@ const ProfilePage = () => {
                         'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
                     }`}>
                     <span className="text-xl">
-                        {resetStatus.type === 'loading' ? '⏳' : resetStatus.type === 'success' ? '✔' : '❌'}
+                        {resetStatus.type === 'loading' ? <Loader2 className="w-6 h-6 animate-spin" /> : resetStatus.type === 'success' ? <CheckCircle2 className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
                     </span>
                     <p className="text-sm font-bold tracking-wide">{resetStatus.message}</p>
                 </div>
@@ -141,8 +173,8 @@ const ProfilePage = () => {
                                 <div className="w-28 h-28 bg-gradient-to-tr from-blue-600 to-indigo-700 rounded-3xl flex items-center justify-center text-white text-4xl font-black shadow-2xl rotate-3 transform group-hover:rotate-0 transition duration-500">
                                     {userData.avatar}
                                 </div>
-                                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-center justify-center shadow-lg text-xl">
-                                    🚀
+                                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 flex items-center justify-center shadow-lg text-blue-600 dark:text-blue-400">
+                                    <Rocket className="w-5 h-5" />
                                 </div>
                             </div>
 
@@ -153,8 +185,8 @@ const ProfilePage = () => {
                                 {userData.email}
                             </p>
 
-                            <div className="mt-6 flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 px-4 py-2 rounded-2xl border border-gray-100 dark:border-gray-800">
-                                <span className="text-2xl">🎓</span>
+                            <div className="mt-6 flex items-center gap-2 bg-gray-50 dark:bg-gray-900/50 px-4 py-2 rounded-2xl border border-gray-100 dark:border-gray-800 text-blue-600 dark:text-blue-400">
+                                <GraduationCap className="w-5 h-5" />
                                 <div className="text-left">
                                     <p className="text-[10px] uppercase font-black text-gray-400 dark:text-gray-500 tracking-tighter leading-none mb-1">Rank & Class</p>
                                     <p className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase leading-none">{userData.role}</p>
@@ -195,7 +227,7 @@ const ProfilePage = () => {
                                 <div className="relative w-32 h-32 flex items-center justify-center">
                                     <div className="absolute inset-0 border-[6px] border-orange-100 dark:border-orange-900/30 rounded-full"></div>
                                     <div className="absolute inset-0 border-[6px] border-orange-500 rounded-full border-t-transparent animate-spin" style={{ animationDuration: '3s' }}></div>
-                                    <span className="text-6xl animate-flicker drop-shadow-xl select-none">🔥</span>
+                                    <Flame className="w-16 h-16 text-orange-500 drop-shadow-xl animate-pulse" />
                                 </div>
                             </div>
 
@@ -227,8 +259,8 @@ const ProfilePage = () => {
                             {activity.length > 0 ? (
                                 activity.map((session) => (
                                     <div key={session.id} className="group flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-transparent hover:border-blue-500/30 transition-all duration-300">
-                                        <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 flex items-center justify-center text-xl group-hover:scale-110 transition duration-300">
-                                            {session.module === 'chat' ? '💬' : session.module === 'campus' ? '🏫' : '🛠️'}
+                                        <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition duration-300">
+                                            {session.module === 'chat' ? <MessageSquare className="w-5 h-5" /> : session.module === 'campus' ? <School className="w-5 h-5" /> : <Wrench className="w-5 h-5" />}
                                         </div>
                                         <div className="flex-grow">
                                             <h4 className="text-sm font-black text-gray-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition duration-200">
@@ -253,6 +285,67 @@ const ProfilePage = () => {
                             )}
                         </div>
                     </div>
+
+                    {/* AI Personalization Settings */}
+                    <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-8 shadow-sm flex-grow">
+                        <div className="flex items-center justify-between mb-8">
+                            <h2 className="text-xl font-black text-gray-900 dark:text-white flex items-center gap-3">
+                                <span className="w-2 h-8 bg-purple-600 rounded-full"></span>
+                                AI Personalization Settings
+                            </h2>
+                        </div>
+                        <form onSubmit={handleSaveProfile} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Nickname</label>
+                                    <input
+                                        type="text"
+                                        value={profileData.nickname}
+                                        onChange={(e) => setProfileData({ ...profileData, nickname: e.target.value })}
+                                        className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                        placeholder="What should the AI call you?"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Occupation / Role</label>
+                                    <input
+                                        type="text"
+                                        value={profileData.occupation}
+                                        onChange={(e) => setProfileData({ ...profileData, occupation: e.target.value })}
+                                        className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                                        placeholder="e.g., Computer Science Student"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">About Me</label>
+                                <textarea
+                                    value={profileData.about_me}
+                                    onChange={(e) => setProfileData({ ...profileData, about_me: e.target.value })}
+                                    className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all min-h-[100px] resize-y"
+                                    placeholder="Tell the AI a bit about yourself so it can provide better context..."
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Custom Instructions</label>
+                                <textarea
+                                    value={profileData.custom_instructions}
+                                    onChange={(e) => setProfileData({ ...profileData, custom_instructions: e.target.value })}
+                                    className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm font-bold text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all min-h-[120px] resize-y"
+                                    placeholder="How should the AI behave? e.g., 'Always provide concise answers' or 'Respond like a sarcastic tutor'"
+                                />
+                            </div>
+                            <div className="pt-2">
+                                <button
+                                    type="submit"
+                                    disabled={isSavingProfile}
+                                    className="px-8 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {isSavingProfile ? 'Saving...' : 'Save Settings'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </main>
 
                 {/* RIGHT (30%): Settings & Controls Panel */}
@@ -265,7 +358,9 @@ const ProfilePage = () => {
                             className="w-full flex items-center justify-between p-4 bg-blue-50/50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/30 group active:scale-95 transition-all"
                         >
                             <div className="flex items-center gap-3">
-                                <span className="text-xl">{theme === 'dark' ? '🌙' : '☀️'}</span>
+                                <span className="text-blue-600 dark:text-blue-400">
+                                    {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                                </span>
                                 <span className="text-sm font-black text-blue-900 dark:text-blue-400 uppercase tracking-widest">
                                     {theme === 'dark' ? 'Matrix Dark' : 'Daylight Ops'}
                                 </span>
@@ -297,17 +392,17 @@ const ProfilePage = () => {
                     <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-3xl p-6 shadow-sm">
                         <h3 className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em] mb-4">Data Management</h3>
                         <div className="space-y-3">
-                            <button
+                             <button
                                 onClick={handleDownloadLogs}
-                                className="w-full py-4 bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 border border-gray-100 dark:border-gray-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 transition-all active:scale-95"
+                                className="w-full py-4 bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-700/50 border border-gray-100 dark:border-gray-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-600 dark:text-gray-400 transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
-                                💾 Download Logs
+                                <Download className="w-3 h-3" /> Download Logs
                             </button>
                             <button
                                 onClick={handleClearHistory}
-                                className="w-full py-4 bg-red-50/50 dark:bg-red-900/10 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-100/50 dark:border-red-900/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 transition-all active:scale-95"
+                                className="w-full py-4 bg-red-50/50 dark:bg-red-900/10 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-100/50 dark:border-red-900/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-red-600 dark:text-red-400 transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
-                                🗑️ Purge Records
+                                <Trash2 className="w-3 h-3" /> Purge Records
                             </button>
                         </div>
                     </div>

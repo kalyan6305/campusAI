@@ -19,6 +19,9 @@
   --bg-dark-tertiary: #0a111e;
   --accent-teal: #2dd4bf;
   --accent-blue: #3b82f6;
+  --accent-primary: #3b82f6;
+  --accent-primary-hover: #2563eb;
+  --accent-primary-light: rgba(59, 130, 246, 0.1);
   --accent-gradient: linear-gradient(135deg, var(--accent-teal), var(--accent-blue));
 }
 

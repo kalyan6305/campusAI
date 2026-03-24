@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Globe, Microscope, Search, MessageSquare } from 'lucide-react';
 
 // ── Platform config ─────────────────────────────────────────────
 const DOT_COLORS = ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-yellow-500'];
@@ -16,8 +17,8 @@ export default function ResearchSidebar({ results, isStreaming, activeTool, setA
     const displaySources = sources.filter(s => s.browser?.toLowerCase() !== 'social');
 
     const tabs = [
-        { id: 'browser', label: 'Web Browser', icon: '🌐' },
-        { id: 'deep_research', label: 'Deep Research', icon: '🔬' },
+        { id: 'browser', label: 'Web Browser', icon: <Globe className="w-4 h-4" /> },
+        { id: 'deep_research', label: 'Deep Research', icon: <Microscope className="w-4 h-4" /> },
     ];
 
     // Unique categories among current display sources
@@ -113,8 +114,8 @@ export default function ResearchSidebar({ results, isStreaming, activeTool, setA
                     ))
                 ) : !isStreaming ? (
                     <div className="flex flex-col items-center py-10 text-center">
-                        <div className="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-gray-900 flex items-center justify-center text-3xl mb-4 opacity-30 animate-pulse">
-                            {activeTool === 'browser' ? '🔍' : '💬'}
+                        <div className="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-gray-900 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4 opacity-50 animate-pulse">
+                            {activeTool === 'browser' ? <Search className="w-8 h-8" /> : <MessageSquare className="w-8 h-8" />}
                         </div>
                         <p className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-[0.2em]">Discovery Engine Ready</p>
                         <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 leading-relaxed">
@@ -142,7 +143,7 @@ export default function ResearchSidebar({ results, isStreaming, activeTool, setA
                                         }`}
                                 >
                                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        <span className="text-[10px] flex-shrink-0">🔍</span>
+                                        <Search className="w-3 h-3 text-gray-400" />
                                         <span className="text-[10px] text-gray-700 dark:text-gray-300 truncate font-medium">
                                             {session.title}
                                         </span>

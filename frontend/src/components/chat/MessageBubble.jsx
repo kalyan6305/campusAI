@@ -4,6 +4,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { speak, stopSpeaking } from '../../utils/tts';
 import useChatStore from '../../store/chatStore';
+import { Share2, Copy, Volume2, ThumbsUp, ThumbsDown, MoreHorizontal, Check, Edit3, User, Bot, GraduationCap, School, Wrench } from 'lucide-react';
 
 // ── Parse :::confidence block from AI response ─────────────────
 function parseConfidence(raw) {
@@ -88,16 +89,12 @@ function CodeBlock({ node, inline, className, children, ...props }) {
                 >
                     {isCopied ? (
                         <>
-                            <svg className="w-3 h-3 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
+                            <Check className="w-3 h-3 text-green-500" />
                             <span className="text-green-500">Copied!</span>
                         </>
                     ) : (
                         <>
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
+                            <Copy className="w-3 h-3" />
                             <span>Copy</span>
                         </>
                     )}
@@ -152,21 +149,15 @@ function ConfidenceBar({ confidence, onCopy, isCopied, onSpeak, isSpeaking, onSh
                 <div className="flex items-center gap-3">
                     {/* Share */}
                     <button onClick={onShare} className="text-gray-400 hover:text-blue-500 transition-colors" title="Share">
-                        <svg className="w-[15px] h-[15px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
-                        </svg>
+                        <Share2 className="w-[15px] h-[15px]" />
                     </button>
                     {/* Copy */}
                     <button onClick={onCopy} className={`transition-colors ${isCopied ? 'text-green-500' : 'text-gray-400 hover:text-gray-600'}`} title={isCopied ? 'Copied!' : 'Copy'}>
-                        <svg className="w-[15px] h-[15px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
+                        <Copy className="w-[15px] h-[15px]" />
                     </button>
                     {/* Listen */}
                     <button onClick={onSpeak} className={`transition-colors ${isSpeaking ? 'text-blue-500' : 'text-gray-400 hover:text-gray-600'}`} title={isSpeaking ? 'Stop' : 'Read aloud'}>
-                        <svg className="w-[15px] h-[15px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.536 8.464a5 5 0 010 7.072M12 5v14m-4-7H4" />
-                        </svg>
+                        <Volume2 className="w-[15px] h-[15px]" />
                     </button>
 
                     {/* Score badge */}
@@ -191,9 +182,7 @@ function ConfidenceBar({ confidence, onCopy, isCopied, onSpeak, isSpeaking, onSh
                         className={`transition-colors ${thumbFeedback === 'up' ? 'text-green-500' : 'text-gray-400 hover:text-green-500'}`}
                         title="Helpful"
                     >
-                        <svg className="w-[15px] h-[15px]" fill={thumbFeedback === 'up' ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21H5a2 2 0 01-2-2v-7a2 2 0 012-2h2.924a2 2 0 001.569-.757l3-3.75A1.5 1.5 0 0114 6.5V10z" />
-                        </svg>
+                        <ThumbsUp className="w-[15px] h-[15px]" fill={thumbFeedback === 'up' ? 'currentColor' : 'none'} />
                     </button>
                     {/* Thumbs Down */}
                     <button
@@ -201,9 +190,7 @@ function ConfidenceBar({ confidence, onCopy, isCopied, onSpeak, isSpeaking, onSh
                         className={`transition-colors ${thumbFeedback === 'down' ? 'text-red-500' : 'text-gray-400 hover:text-red-500'}`}
                         title="Not helpful"
                     >
-                        <svg className="w-[15px] h-[15px]" fill={thumbFeedback === 'down' ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3H19a2 2 0 012 2v7a2 2 0 01-2 2h-2.924a2 2 0 00-1.569.757l-3 3.75A1.5 1.5 0 0110 17.5V14z" />
-                        </svg>
+                        <ThumbsDown className="w-[15px] h-[15px]" fill={thumbFeedback === 'down' ? 'currentColor' : 'none'} />
                     </button>
                     {/* More (…) */}
                     <div className="relative" ref={moreRef}>
@@ -212,11 +199,7 @@ function ConfidenceBar({ confidence, onCopy, isCopied, onSpeak, isSpeaking, onSh
                             className={`transition-colors ${showMore ? 'text-gray-700' : 'text-gray-400 hover:text-gray-600'}`}
                             title="More options"
                         >
-                            <svg className="w-[15px] h-[15px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                                <circle cx="5" cy="12" r="1" fill="currentColor" />
-                                <circle cx="12" cy="12" r="1" fill="currentColor" />
-                                <circle cx="19" cy="12" r="1" fill="currentColor" />
-                            </svg>
+                            <MoreHorizontal className="w-[15px] h-[15px]" />
                         </button>
                         {showMore && (
                             <div className="absolute right-0 bottom-6 z-50 w-40 bg-white border border-gray-200 rounded-xl shadow-lg py-1 text-[12px]">
@@ -328,8 +311,8 @@ export default function MessageBubble({ role, content, index }) {
 
             {/* AI Avatar */}
             {!isUser && (
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center mr-3 mt-1 shadow-sm">
-                    <span className="text-xs font-bold text-white uppercase">AI</span>
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center mr-3 mt-1 shadow-md">
+                    <Bot className="w-5 h-5 text-white" />
                 </div>
             )}
 
@@ -388,9 +371,7 @@ export default function MessageBubble({ role, content, index }) {
                                     title="Edit message"
                                     disabled={isStreaming}
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                    </svg>
+                                    <Edit3 className="h-3.5 w-3.5" />
                                 </button>
                             ) : (
                                 <>
@@ -400,9 +381,7 @@ export default function MessageBubble({ role, content, index }) {
                                             }`}
                                         title={isSpeaking ? 'Stop reading' : 'Read aloud'}
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                                        </svg>
+                                        <Volume2 className="h-3.5 w-3.5" />
                                     </button>
                                     <button
                                         onClick={handleCopy}
@@ -410,9 +389,7 @@ export default function MessageBubble({ role, content, index }) {
                                             }`}
                                         title={isCopied ? 'Copied!' : 'Copy to clipboard'}
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                        </svg>
+                                        <Copy className="h-3.5 w-3.5" />
                                     </button>
                                 </>
                             )}
@@ -439,7 +416,7 @@ export default function MessageBubble({ role, content, index }) {
             {/* User Avatar */}
             {isUser && (
                 <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center ml-3 mt-1 shadow-sm transition-colors group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30">
-                    <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase group-hover:text-blue-700 dark:group-hover:text-blue-400">U</span>
+                    <User className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-blue-700 dark:group-hover:text-blue-400" />
                 </div>
             )}
         </div>
