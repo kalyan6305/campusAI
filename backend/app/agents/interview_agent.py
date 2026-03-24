@@ -1,5 +1,6 @@
 import logging
 import json
+import re
 from typing import List, Dict, Any, Optional
 from app.llm.factory import get_llm_provider
 from app.core.config import get_settings
@@ -47,7 +48,7 @@ class InterviewPreparationAgent:
         self.llm = get_llm_provider()
         self.settings = get_settings()
 
-    async def generate_questions(self, role: str, interview_type: str, company: str = "Generic", round_type: Optional[str] = None, difficulty: str = "Intermediate", exclude_questions: Optional[List[str]] = None, user_type: str = "general", experience_years: int = 0, num_questions: int = 5) -> List[Dict[str, Any]]:
+    async def generate_questions(self, role: str, interview_type: str, company: str = "Generic", round_type: Optional[str] = None, difficulty: str = "Intermediate", exclude_questions: Optional[List[str]] = None, user_type: str = "general", experience_years: int = 0, num_questions: int = 5, selected_topic: Optional[str] = None) -> List[Dict[str, Any]]:
         """Generate interview questions and model answers based on role, company, and round."""
         persona_data = COMPANY_PERSONAS.get(company.lower(), COMPANY_PERSONAS["general"])
         persona = persona_data["persona"]
@@ -57,12 +58,18 @@ class InterviewPreparationAgent:
         if exclude_questions:
             exclude_str = f"Do NOT include the following questions: " + ", ".join(exclude_questions)
 
+        topic_focus = ""
+        if selected_topic and selected_topic != "All topics":
+            topic_focus = f"Focus all questions ONLY on the topic: {selected_topic}."
+
         prompt = f"""
         {persona}
 
         You are conducting a {round_type if round_type else interview_type} interview for the role
         of {role} at {company}. The candidate has {experience_years}
         year(s) of experience and is a {user_type}.
+
+        {topic_focus}
 
         Generate exactly {num_questions} interview questions.
         Return a JSON array only. No explanation. No extra text.
@@ -71,7 +78,7 @@ class InterviewPreparationAgent:
         {{
           "id": "unique_string_id",
           "question": "The actual question text",
-          "topic": "The specific technical or behavioral topic",
+          "topic": "{selected_topic if selected_topic else 'General'}",
           "difficulty": "{difficulty}",
           "suggested_answer": "A comprehensive model answer that demonstrates senior-level thinking",
           "expected_signals": [
@@ -88,18 +95,37 @@ class InterviewPreparationAgent:
         Context & Rules:
         - {exclude_str}
         - Focus on {round_type if round_type else "general competency"}.
+        - {topic_focus}
+        - IMPORTANT: If this is an 'Aptitude' or 'OA' round, strictly AVOID any programming, JavaScript, SQL or technical role-specific questions. Focus ONLY on logic, reasoning, or quantitative skills.
         - Ensure variety: mix conceptual, implementation, and behavioral/leadership questions as appropriate for {company}.
         """
         messages = [{"role": "system", "content": "You are an expert interviewer. Return only JSON data."},
                     {"role": "user", "content": prompt}]
         response = await self.llm.generate(messages)
         try:
-            start = response.find('[')
-            end = response.rfind(']') + 1
-            return json.loads(response[start:end])
+            # Robust JSON extraction
+            content = response.strip()
+            if "```json" in content:
+                content = content.split("```json")[-1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+            
+            start = content.find('[')
+            end = content.rfind(']') + 1
+            if start == -1 or end == 0:
+                raise ValueError("No JSON array found in response")
+                
+            return json.loads(content[start:end])
         except Exception as e:
             logger.error(f"Error parsing interview questions: {e}")
             logger.debug(f"Raw response: {response}")
+            # Try to find any list-like structure as a last resort
+            try:
+                matches = re.findall(r'\{.*?\}', response, re.DOTALL)
+                if matches:
+                    return [json.loads(m) for m in matches]
+            except:
+                pass
             return []
 
     async def clarify_doubt(self, role: str, question: str, context: str, user_query: str) -> Dict[str, Any]:
@@ -129,9 +155,13 @@ class InterviewPreparationAgent:
                     {"role": "user", "content": prompt}]
         response = await self.llm.generate(messages)
         try:
-            start = response.find('{')
-            end = response.rfind('}') + 1
-            return json.loads(response[start:end])
+            content = response.strip()
+            if "```json" in content:
+                content = content.split("```json")[-1].split("```")[0].strip()
+            
+            start = content.find('{')
+            end = content.rfind('}') + 1
+            return json.loads(content[start:end])
         except Exception as e:
             logger.error(f"Error clarifying doubt: {e}")
             return {
@@ -188,9 +218,13 @@ class InterviewPreparationAgent:
                     {"role": "user", "content": prompt}]
         response = await self.llm.generate(messages)
         try:
-            start = response.find('{')
-            end = response.rfind('}') + 1
-            result = json.loads(response[start:end])
+            content = response.strip()
+            if "```json" in content:
+                content = content.split("```json")[-1].split("```")[0].strip()
+
+            start = content.find('{')
+            end = content.rfind('}') + 1
+            result = json.loads(content[start:end])
             # Ensure clarity_score = overall for backward compatibility
             if "scores" in result and "overall" in result["scores"]:
                 result["clarity_score"] = result["scores"]["overall"]
@@ -238,15 +272,19 @@ class InterviewPreparationAgent:
                     {"role": "user", "content": prompt}]
         response = await self.llm.generate(messages)
         try:
-            start = response.find('{')
-            end = response.rfind('}') + 1
-            return json.loads(response[start:end])
+            content = response.strip()
+            if "```json" in content:
+                content = content.split("```json")[-1].split("```")[0].strip()
+
+            start = content.find('{')
+            end = content.rfind('}') + 1
+            return json.loads(content[start:end])
         except Exception as e:
             logger.error(f"Error parsing round summary: {e}")
             return {"what_went_well": "Completed the round.", "main_gap": "Continue practicing."}
 
     async def generate_final_report(self, role: str, company: str, round_results: List[Dict[str, Any]], overall_dimension_avgs: Dict[str, float]) -> Dict[str, Any]:
-        weakest_dim = min(overall_dimension_avgs, key=overall_dimension_avgs.get) if overall_dimension_avgs else "Technical Basics"
+        weakest_dim = min(overall_dimension_avgs, key=lambda k: overall_dimension_avgs[k]) if overall_dimension_avgs else "Technical Basics"
         
         prompt = f"""
         Acting as a senior hiring manager at {company if company != "Generic" else "a top tech firm"},
@@ -295,4 +333,179 @@ class InterviewPreparationAgent:
                 "selection_probability": "0%",
                 "learning_plan": ["Review basics"],
                 "next_focus": "Review the core concepts."
+            }
+
+    async def get_round_topics(self, company: str, round_type: str, role: str) -> List[str]:
+        """List specific topics tested in a particular round for a company."""
+        prompt = f"""
+        You are an expert on {company}'s hiring process.
+        List the specific topics that are tested in the {round_type} round for a {role} position at {company}.
+
+        Return a JSON object only. No explanation. No extra text.
+        {{
+          "topics": [
+            "topic name 1",
+            "topic name 2",
+            ...
+          ]
+        }}
+
+        Return between 6 and 12 topics. Be specific to {company}'s known interview patterns.
+        """
+        messages = [{"role": "system", "content": "You are an expert recruiter. Return only JSON data."},
+                    {"role": "user", "content": prompt}]
+        response = await self.llm.generate(messages)
+        try:
+            start = response.find('{')
+            end = response.rfind('}') + 1
+            data = json.loads(response[start:end])
+            return data.get("topics", [])
+        except Exception as e:
+            logger.error(f"Error parsing round topics: {e}")
+            return ["Core Concepts", "Implementation", "Edge Cases", "Problem Solving", "Optimisation"]
+
+    async def generate_mcq_questions(self, company: str, round_type: str, role: str, topic: Optional[str] = None, n: int = 5, previous_questions: List[str] = []) -> List[Dict[str, Any]]:
+        """Generate multiple choice questions for aptitude/OA rounds."""
+        exclude_str = ""
+        if previous_questions:
+            exclude_items = "\n".join([f"- {q}" for q in previous_questions])
+            exclude_str = f"\n\nDO NOT repeat or include any of the following questions:\n{exclude_items}"
+
+        prompt = f"""
+        You are an expert {company} aptitude interviewer.
+        Generate exactly {n} multiple choice questions for the {round_type} round. Role: {role}. Topic: {topic if topic else "General Aptitude"}.
+
+        Each question must match {company}'s known OA difficulty and style.
+        
+        IMPORTANT: This is a pure Aptitude/OA round. Do NOT include ANY programming, JavaScript, SQL, or technical role-specific questions. Focus EXCLUSIVELY on the selected topic: {topic if topic else "General Aptitude"}.{exclude_str}
+
+        Return a JSON array only. No explanation. No extra text.
+        [
+          {{
+            "id": "mcq_id",
+            "question": "string",
+            "topic": "{topic if topic else 'Aptitude'}",
+            "difficulty": "medium",
+            "options": {{
+              "A": "option text",
+              "B": "option text",
+              "C": "option text",
+              "D": "option text"
+            }},
+            "correct_option": "A",
+            "explanation": "detailed explanation of the solution",
+            "shortcut_trick": "a fast mental trick to solve this type of question quickly"
+          }}
+        ]
+        """
+        messages = [{"role": "system", "content": "You are an expert OA interviewer. Return only JSON data."},
+                    {"role": "user", "content": prompt}]
+        response = await self.llm.generate(messages)
+        try:
+            content = response.strip()
+            if "```json" in content:
+                content = content.split("```json")[-1].split("```")[0].strip()
+
+            start = content.find('[')
+            end = content.rfind(']') + 1
+            if start == -1 or end == 0:
+                logger.error(f"No JSON array found in response: {response}")
+                return []
+            return json.loads(content[start:end])
+        except Exception as e:
+            logger.error(f"Error parsing MCQ questions: {e}")
+            logger.debug(f"Raw response: {response}")
+            return []
+
+    async def teach_topic(self, company: str, role: str, round_type: str, topic: str) -> Dict[str, Any]:
+        """Generate a comprehensive study guide for a specific topic."""
+        prompt = f"""
+        You are an expert interview coach preparing a candidate for {company}'s {round_type} round for the role of {role}.
+        Teach the topic: {topic}
+
+        Structure your response as JSON only.
+        {{
+          "topic": "{topic}",
+          "what_it_is": "explanation",
+          "why_it_matters_at_company": "why {company} tests this",
+          "core_concepts": [
+            {{
+              "concept": "name",
+              "explanation": "clear info",
+              "example": "concrete case"
+            }}
+          ],
+          "patterns_and_tricks": ["tip 1", "tip 2"],
+          "common_mistakes": ["mistake 1", "mistake 2"],
+          "sample_question": "example question",
+          "one_liner_to_remember": "memorable summary"
+        }}
+        """
+        messages = [{"role": "system", "content": "You are an expert interview coach. Return only JSON data."},
+                    {"role": "user", "content": prompt}]
+        response = await self.llm.generate(messages)
+        try:
+            start = response.find('{')
+            end = response.rfind('}') + 1
+            return json.loads(response[start:end])
+        except Exception as e:
+            logger.error(f"Error in teach_topic: {e}")
+            return {
+                "topic": topic,
+                "what_it_is": f"Detailed guide for {topic}",
+                "why_it_matters_at_company": "Critical for the target role.",
+                "core_concepts": [],
+                "patterns_and_tricks": [],
+                "common_mistakes": [],
+                "sample_question": "Explain the core concepts of this topic.",
+                "one_liner_to_remember": "Master the basics to excel in advanced applications."
+            }
+
+    async def predict_company_process(self, company: str, role: str) -> Dict[str, Any]:
+        """Predict the interview rounds for a specific company and role using LLM knowledge."""
+        prompt = f"""
+        Research and predict the standard interview process for the company: {company} 
+        and the role: {role}.
+        
+        A typical process includes several rounds. Common rounds are:
+        - Aptitude/OA (Online Assessment)
+        - Technical Interview (DSA/Coding)
+        - System Design / Technical Basics
+        - Managerial / TR+MR
+        - HR Interview
+        
+        Return exactly this JSON format:
+        {{
+          "rounds": ["Round 1 Name", "Round 2 Name", "Round 3 Name", ...],
+          "justification": "Brief explanation of why this process is predicted for this company"
+        }}
+        
+        Return ONLY valid JSON.
+        """
+        
+        messages = [{"role": "system", "content": "You are a recruitment consultant specializing in tech hiring patterns. Return only JSON."},
+                    {"role": "user", "content": prompt}]
+        
+        response = await self.llm.generate(messages)
+        try:
+            content = response.strip()
+            if "```json" in content:
+                content = content.split("```json")[-1].split("```")[0].strip()
+            
+            start = content.find('{')
+            end = content.rfind('}') + 1
+            data = json.loads(content[start:end])
+            return {
+                "company": company,
+                "role": role,
+                "rounds": data.get("rounds", ["Technical", "HR"]),
+                "justification": data.get("justification", "Standard industry practice.")
+            }
+        except Exception as e:
+            logger.error(f"Error predicting company process: {e}")
+            return {
+                "company": company,
+                "role": role,
+                "rounds": ["Technical Interview", "HR Interview"],
+                "justification": "Default standard process fallback."
             }

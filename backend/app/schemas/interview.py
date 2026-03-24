@@ -21,6 +21,7 @@ class InterviewRoleRequest(BaseModel):
     user_type: Optional[str] = "general"
     experience_years: Optional[int] = 0
     num_questions: Optional[int] = 5
+    selected_topic: Optional[str] = None
 
 class InterviewQuestionsResponse(BaseModel):
     role: str
@@ -76,3 +77,55 @@ class FinalInterviewReportResponse(BaseModel):
     selection_probability: str
     learning_plan: List[str]
     next_focus: str
+
+class InterviewTopicsRequest(BaseModel):
+    company: str
+    round_type: str
+    role: str
+
+class InterviewTopicsResponse(BaseModel):
+    topics: List[str]
+
+class InterviewMCQItem(BaseModel):
+    id: str
+    question: str
+    topic: str
+    difficulty: str
+    options: dict
+    correct_option: str
+    explanation: str
+    shortcut_trick: Optional[str] = None
+
+class InterviewMCQRequest(BaseModel):
+    company: str
+    round_type: str
+    role: str
+    topic: Optional[str] = None
+    n: Optional[int] = 5
+    previous_questions: Optional[List[str]] = []
+
+class InterviewTeachRequest(BaseModel):
+    company: str
+    role: str
+    round_type: str
+    topic: str
+
+class InterviewTeachResponse(BaseModel):
+    topic: str
+    what_it_is: str
+    why_it_matters_at_company: str
+    core_concepts: List[dict]
+    patterns_and_tricks: List[str]
+    common_mistakes: List[str]
+    sample_question: str
+    one_liner_to_remember: str
+
+class InterviewProcessRequest(BaseModel):
+    company: str
+    role: str
+
+class InterviewProcessResponse(BaseModel):
+    company: str
+    role: str
+    rounds: List[str]
+    justification: Optional[str] = None

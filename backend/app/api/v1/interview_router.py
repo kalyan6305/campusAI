@@ -13,7 +13,15 @@ from app.schemas.interview import (
     InterviewDoubtRequest,
     InterviewDoubtResponse,
     FinalInterviewReportRequest,
-    FinalInterviewReportResponse
+    FinalInterviewReportResponse,
+    InterviewTopicsRequest,
+    InterviewTopicsResponse,
+    InterviewMCQItem,
+    InterviewMCQRequest,
+    InterviewTeachRequest,
+    InterviewTeachResponse,
+    InterviewProcessRequest,
+    InterviewProcessResponse
 )
 
 logger = logging.getLogger(__name__)
@@ -36,10 +44,20 @@ async def generate_interview_questions(
             exclude_questions=request.exclude_questions,
             user_type=request.user_type,
             experience_years=request.experience_years,
-            num_questions=request.num_questions
+            num_questions=request.num_questions,
+            selected_topic=request.selected_topic
         )
         if not questions:
-            raise HTTPException(status_code=500, detail="Failed to generate questions. Please try again.")
+            # Return empty list with 200 instead of 500 to avoid UI crash, 
+            # let UI handle the "No questions generated" state or retry.
+            logger.warning(f"No questions generated for role={request.role}, company={request.company}")
+            return InterviewQuestionsResponse(
+                role=request.role,
+                company=request.company,
+                interview_type=request.interview_type,
+                round_type=request.round_type,
+                questions=[]
+            )
             
         return InterviewQuestionsResponse(
             role=request.role,
@@ -49,8 +67,8 @@ async def generate_interview_questions(
             questions=questions
         )
     except Exception as e:
-        logger.error(f"Failed to generate questions: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to generate questions: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 @router.post("/clarify", response_model=InterviewDoubtResponse)
 async def clarify_interview_doubt(
@@ -123,4 +141,67 @@ async def generate_final_interview_report(
         return FinalInterviewReportResponse(**report)
     except Exception as e:
         logger.error(f"Failed to generate final report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/topics", response_model=InterviewTopicsResponse)
+async def get_interview_topics(
+    request: InterviewTopicsRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """List specific topics for a round."""
+    try:
+        agent = InterviewPreparationAgent()
+        topics = await agent.get_round_topics(request.company, request.round_type, request.role)
+        return InterviewTopicsResponse(topics=topics)
+    except Exception as e:
+        logger.error(f"Failed to fetch topics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/generate-mcq", response_model=List[InterviewMCQItem])
+async def generate_mcq_questions(
+    request: InterviewMCQRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Generate MCQ questions for Aptitude/OA rounds."""
+    try:
+        agent = InterviewPreparationAgent()
+        questions = await agent.generate_mcq_questions(
+            request.company, 
+            request.round_type, 
+            request.role, 
+            topic=request.topic, 
+            n=request.n,
+            previous_questions=request.previous_questions
+        )
+        return questions
+    except Exception as e:
+        logger.error(f"Failed to generate MCQs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/teach", response_model=InterviewTeachResponse)
+async def teach_interview_topic(
+    request: InterviewTeachRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Get a study guide for a topic."""
+    try:
+        agent = InterviewPreparationAgent()
+        lesson = await agent.teach_topic(request.company, request.role, request.round_type, request.topic)
+        return InterviewTeachResponse(**lesson)
+    except Exception as e:
+        logger.error(f"Failed to teach topic: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/predict-rounds", response_model=InterviewProcessResponse)
+async def predict_interview_process(
+    request: InterviewProcessRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Predict interview rounds for a company and role."""
+    try:
+        agent = InterviewPreparationAgent()
+        process = await agent.predict_company_process(request.company, request.role)
+        return InterviewProcessResponse(**process)
+    except Exception as e:
+        logger.error(f"Failed to predict interview process: {e}")
         raise HTTPException(status_code=500, detail=str(e))

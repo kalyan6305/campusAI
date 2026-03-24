@@ -44,13 +44,31 @@ const AgentsPage = () => {
     const handleSelectAgent = (agentId) => {
         clearActiveSession();
         setSelectedAgent(agentId);
+        window.history.pushState({ isAgentOpen: true }, '', window.location.pathname);
     };
 
     const handleBack = () => {
-        clearActiveSession();
-        setSelectedAgent(null);
-        setShowHistory(true);
+        if (window.history.state && window.history.state.isAgentOpen) {
+            window.history.back();
+        } else {
+            clearActiveSession();
+            setSelectedAgent(null);
+            setShowHistory(true);
+        }
     };
+
+    React.useEffect(() => {
+        const handlePopState = (e) => {
+            if (selectedAgent) {
+                clearActiveSession();
+                setSelectedAgent(null);
+                setShowHistory(true);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [selectedAgent, clearActiveSession, setShowHistory]);
 
     return (
         <div className="page-container animate-fade-in flex flex-col h-full overflow-hidden max-w-[1600px] mx-auto px-4 md:px-8 py-4">
