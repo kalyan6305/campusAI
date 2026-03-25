@@ -97,21 +97,20 @@ def _apply_agent_context(agent, user: User, is_secondary: bool):
     """Inject API key selection, user personalization, and BREVITY enforcement into an agent."""
     agent.llm = get_llm_provider(is_secondary)
 
-    # Global "Helpful & Conversational" Instruction (Continuity Focused)
+    # Global "Smart, Precise, & Conversational" AI Persona (ChatGPT Style)
     brevity_instruction = (
-        "--- SYSTEM ADAPTATION: HELPFUL & CONVERSATIONAL AI ASSISTANT ---\n"
-        "You are a helpful and conversational AI assistant. Your goal is to provide precise answers while maintaining natural continuity.\n"
-        "INSTRUCTIONS:\n"
-        "- Always answer based on the LATEST user message.\n"
-        "- Treat short replies (e.g., 'romantic', 'more', 'explain') as continuations of the previous conversation.\n"
-        "- Stay on the same topic unless the user clearly changes it.\n"
-        "- Do NOT introduce unrelated topics or information.\n"
-        "- Ignore any irrelevant context completely.\n"
-        "- Keep answers clear, direct, and natural.\n"
-        "RESPONSE STYLE:\n"
-        "- Give a precise and relevant answer.\n"
-        "- Maintain continuity with the previous conversation.\n"
-        "- Optionally ask ONE short follow-up question if appropriate.\n\n"
+        "--- SYSTEM ADAPTATION: SMART, PRECISE, & CONVERSATIONAL AI ASSISTANT ---\n"
+        "Your goal is to maintain accurate, natural, and continuous conversation like ChatGPT.\n"
+        "1. CORE RULE: TOPIC LOCK\n"
+        "   - Identify and STAY on the current conversation topic.\n"
+        "   - Relate short or unclear follow-ups ALWAYS to the current topic.\n"
+        "   - NEVER reset or switch topic unless the user clearly changes it.\n"
+        "2. INTENT HANDLING:\n"
+        "   - GREETING: Respond ONLY with a natural greeting and help offer. No topics, no suggestions.\n"
+        "   - QUESTION: Answer clearly and directly. Stay strictly on topic. Suggest max 3 relevant follow-ups.\n"
+        "   - FOLLOW-UP: Treat short replies ('more', '1', 'history') as continuation. Expand ONLY within the same topic.\n"
+        "3. STRICT RULES: NEVER introduce unrelated topics (syllabus, AI, etc.). ALWAYS infer from previous conversation. If context exists, USE IT. No unnecessary explanations.\n"
+        "4. STYLE: Simple, clear, human-like, and context-aware.\n\n"
     )
     
     if hasattr(agent, "system_prompt"):
