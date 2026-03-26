@@ -11,10 +11,11 @@ const CATEGORY_BADGE = { Development: 'bg-blue-50 text-blue-700', Scholarly: 'bg
 // ── Component ────────────────────────────────────────────────────
 // ── Component ────────────────────────────────────────────────────
 export default function ResearchSidebar({ results, isStreaming, activeTool, setActiveTool, sessions = [], activeSessionId, onSelectSession, onDeleteSession }) {
-
+    const [showHistory, setShowHistory] = useState(false);
     const sources = results?.browser || [];
 
-    const displaySources = sources.filter(s => s.browser?.toLowerCase() !== 'social');
+    // The user wants social sources merged with normal links, so we don't filter them out anymore.
+    const displaySources = sources;
 
     const tabs = [
         { id: 'browser', label: 'Web Browser', icon: <Globe className="w-4 h-4" /> },
@@ -66,6 +67,61 @@ export default function ResearchSidebar({ results, isStreaming, activeTool, setA
 
             {/* ── Scrollable content ───────────────────────── */}
             <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-3 space-y-2">
+                
+                {/* ── Conditional History View ── */}
+                {showHistory ? (
+                    <div className="animate-in slide-in-from-right-2 duration-300">
+                        <div className="flex items-center justify-between mb-4 px-1">
+                            <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 tracking-[0.18em] uppercase">
+                                {activeTool === 'browser' ? 'Web Research History' : 'Deep Research History'}
+                            </p>
+                            <button 
+                                onClick={() => setShowHistory(false)}
+                                className="text-[9px] font-bold text-blue-600 hover:text-blue-700 uppercase"
+                            >
+                                Close
+                            </button>
+                        </div>
+                        <div className="space-y-1">
+                            {sessions.length === 0 ? (
+                                <p className="text-[10px] text-gray-400 dark:text-gray-500 italic px-2 py-3 text-center">
+                                    No previous {activeTool === 'browser' ? 'web' : 'deep'} research sessions
+                                </p>
+                            ) : (
+                                sessions.map((session) => (
+                                    <div
+                                        key={session.id}
+                                        onClick={() => onSelectSession?.(session.id)}
+                                        className={`group flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer transition-all duration-200 ${session.id === activeSessionId
+                                            ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700'
+                                            : 'border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800'
+                                            }`}
+                                    >
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            <span className="text-[10px] flex-shrink-0">🔍</span>
+                                            <span className="text-[10px] text-gray-700 dark:text-gray-300 truncate font-medium">
+                                                {session.title}
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDeleteSession?.(session.id);
+                                            }}
+                                            className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all p-0.5"
+                                            title="Delete session"
+                                        >
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <>
 
                 {/* Category summary pills */}
                 {categories.length > 0 && !isStreaming && (
@@ -88,16 +144,16 @@ export default function ResearchSidebar({ results, isStreaming, activeTool, setA
                             href={result.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-start gap-3 px-3 py-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50/20 dark:hover:bg-blue-900/10 transition-all duration-200 group cursor-pointer"
+                            className={`flex items-start gap-3 px-3 py-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 transition-all duration-200 group cursor-pointer ${result.category === 'Social' ? 'hover:border-purple-200 dark:hover:border-purple-800 hover:bg-purple-50/20 dark:hover:bg-purple-900/10' : 'hover:border-blue-200 dark:hover:border-blue-800 hover:bg-blue-50/20 dark:hover:bg-blue-900/10'}`}
                         >
                             <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${CATEGORY_DOT[result.category] || DOT_COLORS[idx % DOT_COLORS.length]}`} />
                             <div className="min-w-0 flex-1">
-                                <p className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 leading-snug group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
-                                    {result.index && <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 font-bold px-1.5 py-0.5 rounded text-[10px] mr-1.5">[{result.index}]</span>}
+                                <p className={`text-[11px] font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 leading-snug transition-colors ${result.category === 'Social' ? 'group-hover:text-purple-700 dark:group-hover:text-purple-400' : 'group-hover:text-blue-700 dark:group-hover:text-blue-400'}`}>
+                                    {result.index && <span className={`${result.category === 'Social' ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-400' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400'} font-bold px-1.5 py-0.5 rounded text-[10px] mr-1.5`}>[{result.index}]</span>}
                                     {result.title}
                                 </p>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <p className={`text-[9px] font-black uppercase tracking-wider truncate ${DOMAIN_COLORS[idx % DOMAIN_COLORS.length]}`}>
+                                    <p className={`text-[9px] font-black uppercase tracking-wider truncate ${result.category === 'Social' ? 'text-purple-600' : DOMAIN_COLORS[idx % DOMAIN_COLORS.length]}`}>
                                         {result.source}
                                     </p>
                                     {result.category && (
@@ -165,11 +221,13 @@ export default function ResearchSidebar({ results, isStreaming, activeTool, setA
                         )}
                     </div>
                 </div>
+                </>
+                )}
             </div>
 
             {/* ── Footer ───────────────────────────────────── */}
-            <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between flex-shrink-0">
-                {displaySources.length > 0 ? (
+            <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between flex-shrink-0 bg-gray-50/30 dark:bg-gray-900/20">
+                {displaySources.length > 0 && !showHistory ? (
                     <>
                         <span className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">
                             {displaySources.length} Source{displaySources.length !== 1 ? 's' : ''} · {categories.length} Categor{categories.length !== 1 ? 'ies' : 'y'}
@@ -182,11 +240,24 @@ export default function ResearchSidebar({ results, isStreaming, activeTool, setA
                         </button>
                     </>
                 ) : (
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                        <span className="text-[9px] font-bold text-green-500 dark:text-green-400 uppercase tracking-widest">
-                            {isStreaming ? 'Searching…' : 'Notebook Mode'}
-                        </span>
+                    <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-1.5">
+                            <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isStreaming ? 'bg-blue-400' : 'bg-green-400'}`} />
+                            <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">
+                                {isStreaming ? 'Searching…' : 'Engine Ready'}
+                            </span>
+                        </div>
+                        
+                        <button 
+                            onClick={() => setShowHistory(!showHistory)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all duration-300 group ${showHistory 
+                                ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
+                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-500 hover:text-blue-600'
+                            }`}
+                        >
+                            <span className="text-xs">📜</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">History</span>
+                        </button>
                     </div>
                 )}
             </div>

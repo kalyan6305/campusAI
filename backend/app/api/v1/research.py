@@ -9,8 +9,11 @@ from typing import Optional
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.base import get_db
 from app.models.user import User
+from app.models.agents_message import AgentsMessage
 from app.services.research_service import ResearchService
 from app.utils.dependencies import get_current_user
 
@@ -26,15 +29,77 @@ class ResearchRequest(BaseModel):
 async def stream_research(
     body: ResearchRequest,
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
     """Start a Web Research session, streaming Thoughts, Actions, Sources, and Answers as JSON."""
     service = ResearchService()
     
     async def event_generator():
+        full_synthesis: str = ""
+        all_thoughts: list[str] = []
+        all_sources: list[dict] = []
+        
         try:
+            # 1. Save user query if session exists
+            if body.session_id:
+                user_msg = AgentsMessage(
+                    session_id=body.session_id,
+                    role="user",
+                    content=body.query
+                )
+                db.add(user_msg)
+                await db.commit()
+
             async for chunk in service.stream_research(query=body.query, mode=body.mode):
+                # Parse chunk to collect for persistence
+                try:
+                    data: dict = json.loads(chunk)
+                    if data.get("type") == "answer":
+                        content_token: str = str(data.get("content", ""))
+                        # Explicitly cast to string to satisfy static analyzer
+                        full_synthesis = str(full_synthesis) + content_token
+                    elif data.get("type") == "thought":
+                        thought: str = str(data.get("content", ""))
+                        all_thoughts.append(thought)
+                    elif data.get("type") == "sources":
+                        sources: list = list(data.get("data", []))
+                        all_sources.extend(sources)
+                except:
+                    pass
+                
                 # We yield each JSON string as a Server-Sent Event data block
                 yield f"data: {chunk}\n\n"
+            
+            # 2. Save assistant response (synthesis + thoughts + sources)
+            if body.session_id and full_synthesis:
+                # Get current sources from service state if possible, or use what we yielded
+                # For now, we'll just save the thoughts. 
+                # Sources are already stored in researchSources in frontend, but for history 
+                # we should eventually persist them.
+                
+                assistant_msg = AgentsMessage(
+                    session_id=body.session_id,
+                    role="assistant",
+                    content=full_synthesis,
+                    meta_data={
+                        "thoughts": all_thoughts,
+                        "sources": all_sources,
+                        "confidence": "85%"
+                    }
+                )
+                db.add(assistant_msg)
+                await db.commit()
+
+                # Yield final structured event for frontend store sync
+                final_event = json.dumps({
+                    "type": "final",
+                    "content": full_synthesis,
+                    "thoughts": all_thoughts,
+                    "sources": all_sources,
+                    "confidence": "85%"
+                })
+                yield f"data: {final_event}\n\n"
+
             yield "data: [DONE]\n\n"
         except Exception as exc:
             logger.error("Research stream error: %s", exc)

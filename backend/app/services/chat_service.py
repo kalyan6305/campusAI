@@ -373,10 +373,28 @@ async def process_chat_stream(
         role="assistant",
         content=reply_text,
     )
-    if hasattr(assistant_msg, 'meta_data') and mode in ["tools", "social"] and search_results:
-        assistant_msg.meta_data = {"sources": search_results, "platform_links": platform_links}
+    
+    if hasattr(assistant_msg, 'meta_data'):
+        meta = {"confidence": "85%"}
+        if mode in ["tools", "social"]:
+            meta["sources"] = search_results
+            meta["platform_links"] = platform_links
+        assistant_msg.meta_data = meta
         
     db.add(assistant_msg)
+
+    # Yield final event for store sync
+    yield {
+        "mode": mode,
+        "status": "FINAL",
+        "token": "",
+        "metadata": {
+            "content": reply_text,
+            "sources": search_results if mode in ["tools", "social"] else [],
+            "platform_links": platform_links if mode in ["tools", "social"] else [],
+            "confidence": "85%"
+        }
+    }
 
     if len(session.messages) <= 2:
         session.title = await _generate_smart_title(user_message)

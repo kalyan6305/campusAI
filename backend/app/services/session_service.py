@@ -163,7 +163,8 @@ async def truncate_session(
         raise NotFoundError(f"{module.capitalize()} session not found")
 
     # 2. Identify messages to delete
-    sorted_messages = sorted(session.messages, key=lambda m: m.timestamp)
+    from app.models import ChatMessage, CampusMessage, ToolsMessage, AgentsMessage
+    sorted_messages: list[ChatMessage | CampusMessage | ToolsMessage | AgentsMessage] = sorted(session.messages, key=lambda m: m.timestamp)
     
     if message_index < 0 or message_index >= len(sorted_messages):
         return # Nothing to do or invalid index

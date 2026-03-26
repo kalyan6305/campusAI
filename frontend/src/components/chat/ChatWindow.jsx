@@ -3,9 +3,13 @@ import useChatStore from '../../store/chatStore';
 import MessageBubble from './MessageBubble';
 import { GraduationCap } from 'lucide-react';
 
+const EMPTY_ARRAY = [];
+
 export default function ChatWindow() {
-    const { getMessages, isStreaming, streamingContent, activeSessionId } = useChatStore();
-    const messages = getMessages();
+    const isStreaming = useChatStore(state => state.isStreaming);
+    const streamingContent = useChatStore(state => state.streamingContent);
+    const activeSessionId = useChatStore(state => state.activeSessionId);
+    const messages = useChatStore(state => state.messagesBySession[activeSessionId] || EMPTY_ARRAY);
     const bottomRef = useRef(null);
 
     useEffect(() => {
@@ -32,7 +36,7 @@ export default function ChatWindow() {
         <div className="flex-1 overflow-y-auto pt-8 pb-4 custom-scrollbar">
             <div className="max-w-4xl mx-auto">
                 {messages.map((msg, idx) => (
-                    <MessageBubble key={idx} index={idx} role={msg.role} content={msg.content} />
+                    <MessageBubble key={idx} index={idx} message={msg} />
                 ))}
 
                 {/* Streaming indicator */}

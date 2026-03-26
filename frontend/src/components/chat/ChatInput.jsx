@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Image as ImageIcon, Mic, SendHorizontal, Loader2 } from 'lucide-react';
 
-export default function ChatInput({ onSend, disabled, voiceState, onVoiceToggle }) {
+export default function ChatInput({ onSend, disabled, voiceState, onVoiceToggle, onNewChat }) {
     const [input, setInput] = useState('');
     const [isListeningLocal, setIsListeningLocal] = useState(false);
     const recognitionRef = useRef(null);
@@ -77,6 +77,26 @@ export default function ChatInput({ onSend, disabled, voiceState, onVoiceToggle 
     return (
         <form onSubmit={handleSubmit} className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
             <div className="flex items-end gap-2 max-w-4xl mx-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-2 shadow-md transition-all focus-within:border-blue-400 dark:focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30">
+                {/* New Chat Button */}
+                <button
+                    type="button"
+                    onClick={() => {
+                        onNewChat?.();
+                        setInput('');
+                    }}
+                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all rounded-xl hover:bg-white dark:hover:bg-gray-800 group relative"
+                    title="New Chat"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    
+                    {/* Tooltip */}
+                    <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl">
+                        New Chat
+                    </span>
+                </button>
+
                 {/* Upload Placeholder */}
                 <button
                     type="button"

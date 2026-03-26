@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 const useResearchStore = create((set, get) => ({
     sources: [],
+    socialResults: [],
     currentResponse: '',
     thoughts: [],
     isResearching: false,
@@ -9,19 +10,19 @@ const useResearchStore = create((set, get) => ({
     
     setMode: (mode) => set({ mode }),
     
-    startResearch: async (query) => {
+    startResearch: async (query, sessionId = null) => {
         if (!query) return;
         
         set({ 
             isResearching: true, 
             sources: [], 
+            socialResults: [],
             currentResponse: '', 
             thoughts: [] 
         });
         
         try {
             const token = localStorage.getItem('access_token');
-            // Hardcoding base URL to standard 8000 for FastAPI, though environment variables are preferred
             const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
             
             const response = await fetch(`${baseUrl}/api/v1/research/stream`, {
@@ -30,7 +31,11 @@ const useResearchStore = create((set, get) => ({
                     'Content-Type': 'application/json',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 },
-                body: JSON.stringify({ query, mode: get().mode })
+                body: JSON.stringify({ 
+                    query, 
+                    mode: get().mode,
+                    session_id: sessionId
+                })
             });
 
             if (!response.ok) {
@@ -61,9 +66,8 @@ const useResearchStore = create((set, get) => ({
                         try {
                             const parsed = JSON.parse(dataStr);
                             
-                            if (parsed.type === 'sources') {
+                            if (parsed.type === 'sources' || parsed.type === 'social_results') {
                                 set(state => {
-                                    // ensure no exact url duplicates if iterating multiple times
                                     const existingUrls = new Set(state.sources.map(s => s.link));
                                     const freshSources = parsed.data.filter(s => !existingUrls.has(s.link));
                                     return { sources: [...state.sources, ...freshSources] };
@@ -76,6 +80,12 @@ const useResearchStore = create((set, get) => ({
                                 set(state => ({
                                     currentResponse: state.currentResponse + parsed.content
                                 }));
+                            } else if (parsed.type === 'final') {
+                                set({
+                                    currentResponse: parsed.content,
+                                    thoughts: parsed.thoughts || [],
+                                    sources: parsed.sources || []
+                                });
                             } else if (parsed.type === 'error') {
                                 set(state => ({
                                     currentResponse: state.currentResponse + `\n\n**System Error:** ${parsed.content}`
@@ -99,6 +109,7 @@ const useResearchStore = create((set, get) => ({
     
     clearResearch: () => set({
         sources: [],
+        socialResults: [],
         currentResponse: '',
         thoughts: [],
         isResearching: false

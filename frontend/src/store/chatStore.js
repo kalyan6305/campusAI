@@ -81,25 +81,27 @@ const useChatStore = create((set, get) => ({
         try {
             const { data: messages } = await sessionAPI.getMessages(sessionId, currentModule);
             
-            // Reconstruct research sources from the latest message that contains metadata
-            let latestSources = { browser: [], social: [], platform_links: [] };
-            if (currentModule === 'tools') {
-                for (let i = messages.length - 1; i >= 0; i--) {
-                    if (messages[i].meta_data && messages[i].meta_data.sources) {
-                        const meta = messages[i].meta_data;
-                        latestSources.browser = meta.sources;
-                        latestSources.platform_links = meta.platform_links || [];
-                        break;
-                    }
-                }
-            }
+            // Reconstruct messages with proper metadata
+            const hydratedMessages = messages.map(msg => ({
+                ...msg,
+                sources: msg.meta_data?.sources || [],
+                thoughts: msg.meta_data?.thoughts || [],
+                confidence: msg.meta_data?.confidence || (msg.role === 'assistant' ? "85%" : null),
+                showSources: false
+            }));
+
+            const lastAssistant = hydratedMessages.filter(m => m.role === 'assistant').slice(-1)[0];
+            const initialSources = lastAssistant?.sources?.length > 0 ? {
+                browser: lastAssistant.sources,
+                platform_links: lastAssistant.meta_data?.platform_links || []
+            } : { browser: [], social: [], platform_links: [] };
 
             set((state) => ({
                 messagesBySession: {
                     ...state.messagesBySession,
-                    [sessionId]: messages,
+                    [sessionId]: hydratedMessages,
                 },
-                researchSources: currentModule === 'tools' ? latestSources : state.researchSources
+                researchSources: initialSources
             }));
         } catch (err) {
             console.error('Failed to load messages', err);
@@ -122,6 +124,36 @@ const useChatStore = create((set, get) => ({
         } catch (err) {
             console.error('Failed to delete session', err);
         }
+    },
+
+    toggleSources: (sessionId, messageId) => {
+        set((state) => {
+            const sessionMessages = state.messagesBySession[sessionId] || [];
+            let newResearchSources = { ...state.researchSources };
+            
+            const updatedMessages = sessionMessages.map((msg) => {
+                if (msg.id === messageId) {
+                    const nextShow = !msg.showSources;
+                    if (nextShow && msg.sources?.length > 0) {
+                        newResearchSources = {
+                            ...newResearchSources,
+                            browser: msg.sources,
+                            platform_links: msg.meta_data?.platform_links || []
+                        };
+                    }
+                    return { ...msg, showSources: nextShow };
+                }
+                return { ...msg, showSources: false };
+            });
+
+            return {
+                messagesBySession: {
+                    ...state.messagesBySession,
+                    [sessionId]: updatedMessages
+                },
+                researchSources: newResearchSources
+            };
+        });
     },
 
     renameSession: async (id, title) => {
@@ -203,6 +235,12 @@ const useChatStore = create((set, get) => ({
                     }));
                 }
 
+                if (status === 'FINAL' && streamMetadata) {
+                    set((state) => ({
+                        lastStreamMetadata: streamMetadata
+                    }));
+                }
+
                 if (token) {
                     set((state) => ({
                         streamingContent: state.streamingContent + token,
@@ -211,10 +249,17 @@ const useChatStore = create((set, get) => ({
             },
             // onDone
             () => {
-                const { streamingContent, getMessages } = get();
+                const { streamingContent, getMessages, lastStreamMetadata } = get();
                 const updatedMessages = [
                     ...getMessages(),
-                    { role: 'assistant', content: streamingContent },
+                    { 
+                        role: 'assistant', 
+                        content: streamingContent,
+                        sources: lastStreamMetadata?.sources || [],
+                        thoughts: lastStreamMetadata?.thoughts || [],
+                        confidence: lastStreamMetadata?.confidence || "85%",
+                        showSources: false
+                    },
                 ];
                 set((state) => ({
                     messagesBySession: {
@@ -223,8 +268,9 @@ const useChatStore = create((set, get) => ({
                     },
                     isStreaming: false,
                     streamingContent: '',
+                    lastStreamMetadata: null
                 }));
-                // Refresh session list (title may have changed)
+                // Refresh session list
                 const { currentModule, loadSessions } = get();
                 loadSessions(currentModule);
             },

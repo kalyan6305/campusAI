@@ -20,29 +20,41 @@ const ToolsPage = () => {
         clearActiveSession
     } = useChatStore();
     
-    const { sources: browserSources, isResearching } = useResearchStore();
+    const { sources: browserSources, isResearching, clearResearch } = useResearchStore();
     
     const sessions = getSessions();
     const [activeTool, setActiveTool] = useState('browser');
 
     React.useEffect(() => {
-        loadSessions('tools');
-        return () => clearActiveSession();
-    }, [loadSessions, clearActiveSession]);
+        const module = activeTool === 'browser' ? 'tools' : 'research';
+        clearActiveSession();
+        clearResearch();
+        loadSessions(module);
+    }, [activeTool, loadSessions, clearActiveSession, clearResearch]);
 
-    const activeResults = activeTool === 'browser' ? { browser: chatResearchSources.browser, platform_links: chatResearchSources.platform_links } : { browser: browserSources };
+    React.useEffect(() => {
+        return () => clearActiveSession();
+    }, [clearActiveSession]);
+
+    const activeResults = activeTool === 'browser' 
+        ? { browser: chatResearchSources.browser, platform_links: chatResearchSources.platform_links } 
+        : (isResearching ? { browser: browserSources } : { browser: chatResearchSources.browser, platform_links: chatResearchSources.platform_links });
     const activeStreaming = activeTool === 'browser' ? isStreaming : isResearching;
 
     const handleSend = async (content) => {
-        if (!activeSessionId) {
-            await createSession('Research Session', 'tools');
+        const module = activeTool === 'browser' ? 'tools' : 'research';
+        let sessionId = activeSessionId;
+        
+        if (!sessionId) {
+            const session = await createSession(content.slice(0, 30), module);
+            sessionId = session.id;
         }
 
-        await sendMessage(content, { mode: 'tools', module: 'tools' });
+        await sendMessage(content, { mode: activeTool === 'browser' ? 'tools' : 'deep', module });
     };
 
     const handleSelectSession = (id) => {
-        setActiveTool('browser');
+        clearResearch();
         selectSession(id);
     };
 
@@ -87,7 +99,11 @@ const ToolsPage = () => {
                         <>
                             <ChatWindow />
                             <div className="p-4 bg-gray-50/50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
-                                <ChatInput onSend={handleSend} disabled={isStreaming} />
+                                <ChatInput 
+                                    onSend={handleSend} 
+                                    disabled={isStreaming} 
+                                    onNewChat={clearActiveSession}
+                                />
                             </div>
                         </>
                     )}

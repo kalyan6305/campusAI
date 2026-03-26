@@ -133,14 +133,6 @@ function ConfidenceBar({ confidence, onCopy, isCopied, onSpeak, isSpeaking, onSh
     const scoreColor = score >= 85 ? 'text-green-700' : score >= 70 ? 'text-blue-700' : 'text-orange-600';
     const badgeLabel = score >= 85 ? 'Verified' : score >= 70 ? 'Checked' : 'Reviewed';
 
-    // Close "More" dropdown when clicking outside
-    useEffect(() => {
-        if (!showMore) return;
-        const handler = (e) => { if (moreRef.current && !moreRef.current.contains(e.target)) setShowMore(false); };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [showMore]);
-
     return (
         <div className="mt-1 w-full">
             {/* ── Main bar ── */}
@@ -162,15 +154,34 @@ function ConfidenceBar({ confidence, onCopy, isCopied, onSpeak, isSpeaking, onSh
 
                     {/* Score badge */}
                     {score !== null && (
-                        <button
-                            onClick={() => setExpanded(e => !e)}
-                            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-                            title="Accuracy score"
-                        >
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
-                            <span className={`text-[11px] font-bold ${scoreColor}`}>{score}%</span>
-                            <span className="text-[10px] text-gray-400 font-medium">{badgeLabel}</span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                             <button
+                                onClick={() => setExpanded(e => !e)}
+                                className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                                title="Accuracy score"
+                            >
+                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
+                                <span className={`text-[11px] font-bold ${scoreColor}`}>{score}%</span>
+                                <span className="text-[10px] text-gray-400 font-medium">{badgeLabel}</span>
+                            </button>
+
+                            {/* Sources Button */}
+                            {confidence?.hasSources && (
+                                <button
+                                    onClick={confidence.onToggleSources}
+                                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full border transition-all text-[10px] font-bold ${
+                                        confidence.showSources 
+                                            ? 'bg-blue-600 border-blue-600 text-white shadow-sm' 
+                                            : 'bg-white border-gray-200 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+                                    }`}
+                                >
+                                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                                    </svg>
+                                    Sources
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -241,9 +252,15 @@ function ConfidenceBar({ confidence, onCopy, isCopied, onSpeak, isSpeaking, onSh
 }
 
 // ── Main Component ─────────────────────────────────────────────
-export default function MessageBubble({ role, content, index }) {
+export default function MessageBubble({ message, index }) {
+    const { role, content } = message;
     const isUser = role === 'user';
-    const { editAndResend, isStreaming } = useChatStore();
+    
+    // Selectors to avoid re-rendering on every store change
+    const editAndResend = useChatStore(state => state.editAndResend);
+    const isStreaming = useChatStore(state => state.isStreaming);
+    const toggleSources = useChatStore(state => state.toggleSources);
+    const activeSessionId = useChatStore(state => state.activeSessionId);
 
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
@@ -399,17 +416,49 @@ export default function MessageBubble({ role, content, index }) {
 
                 {/* Confidence bar — only for AI messages */}
                 {!isUser && !isEditing && (
-                    <ConfidenceBar
-                        confidence={confidence}
-                        onCopy={handleCopy}
-                        isCopied={isCopied}
-                        onSpeak={handleToggleSpeak}
-                        isSpeaking={isSpeaking}
-                        onShare={handleShare}
-                        onThumbsUp={handleThumbsUp}
-                        onThumbsDown={handleThumbsDown}
-                        thumbFeedback={thumbFeedback}
-                    />
+                    <div className="w-full">
+                        <ConfidenceBar
+                            confidence={{
+                                ...confidence,
+                                hasSources: message.sources?.length > 0,
+                                showSources: message.showSources,
+                                onToggleSources: () => toggleSources(activeSessionId, message.id)
+                            }}
+                            onCopy={handleCopy}
+                            isCopied={isCopied}
+                            onSpeak={handleToggleSpeak}
+                            isSpeaking={isSpeaking}
+                            onShare={handleShare}
+                            onThumbsUp={handleThumbsUp}
+                            onThumbsDown={handleThumbsDown}
+                            thumbFeedback={thumbFeedback}
+                        />
+
+                        {/* Per-message Sources List */}
+                        {message.showSources && message.sources?.length > 0 && (
+                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 animate-slide-down">
+                                {message.sources.map((src, i) => (
+                                    <a
+                                        key={i}
+                                        href={src.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex flex-col p-2.5 rounded-xl border border-blue-100 bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-all group/link"
+                                    >
+                                        <span className="text-[11px] font-bold text-blue-700 dark:text-blue-400 line-clamp-1 group-hover/link:underline">
+                                            {src.title || 'Untitled Source'}
+                                        </span>
+                                        <span className="text-[9px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                            {(() => {
+                                                try { return new URL(src.url).hostname; }
+                                                catch(e) { return 'Source'; }
+                                            })()}
+                                        </span>
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 )}
             </div>
 
