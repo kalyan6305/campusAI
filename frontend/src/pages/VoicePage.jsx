@@ -436,21 +436,7 @@ const VoicePage = () => {
             </div>
 
             {/* Main Workspace */}
-            <div className="flex-1 flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-800/50">
-                    <div>
-                        <h2 className="text-sm font-black text-gray-900 dark:text-gray-100 uppercase tracking-wider">Voice Dashboard</h2>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Current Mode</span>
-                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-lg border border-blue-100 dark:border-blue-800">
-                            Voice Conversation
-                        </span>
-                    </div>
-                </div>
+            <div className="flex-grow flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm pt-2">
 
                 {/* Content Area */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar">

@@ -65,8 +65,7 @@ const CampusPage = () => {
             />
 
             {/* Main Chat Area */}
-            <div className="flex-grow flex flex-col min-w-0">
-                <CampusHeader activeModule={selectedModule} />
+            <div className="flex-grow flex flex-col min-w-0 pt-2">
 
 
 

@@ -37,7 +37,7 @@ const HelpPage = () => {
         }
     ];
 
-    const filteredFaqs = faqs.filter(faq => 
+    const filteredFaqs = faqs.filter(faq =>
         faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
         faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -56,7 +56,7 @@ const HelpPage = () => {
                     <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
                         <Search className="w-5 h-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                     </div>
-                    <input 
+                    <input
                         type="text"
                         placeholder="Search for help (e.g., 'How to change instructions', 'Data security')..."
                         value={searchQuery}
@@ -83,10 +83,10 @@ const HelpPage = () => {
                         ))
                     ) : (
                         <div className="col-span-full py-20 text-center space-y-4 bg-white dark:bg-gray-800 rounded-[2rem] border-2 border-dashed border-gray-100 dark:border-gray-800">
-                        <div className="flex flex-col items-center gap-4">
-                            <Search className="w-12 h-12 text-gray-200 dark:text-gray-700" />
-                            <p className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-xs">No matching questions found</p>
-                        </div>
+                            <div className="flex flex-col items-center gap-4">
+                                <Search className="w-12 h-12 text-gray-200 dark:text-gray-700" />
+                                <p className="text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest text-xs">No matching questions found</p>
+                            </div>
                         </div>
                     )}
                 </div>

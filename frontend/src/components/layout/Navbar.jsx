@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import useThemeStore from '../../store/themeStore';
 import useAuthStore from '../../store/authStore';
@@ -9,6 +9,7 @@ const Navbar = ({ hideThemeToggle = false }) => {
     const { logout, user } = useAuthStore();
     const navigate = useNavigate();
     const location = useLocation();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const handleLogout = () => {
         logout();
@@ -58,7 +59,7 @@ const Navbar = ({ hideThemeToggle = false }) => {
                     {/* Logo */}
                     <div className="flex-shrink-0 flex items-center">
                         <Link to="/" className="text-xl font-black text-blue-600 dark:text-blue-500 tracking-tight hover:opacity-90 transition-opacity flex items-center gap-2">
-                            <span className="bg-blue-600 text-white w-7 h-7 rounded-lg flex items-center justify-center text-[11px]">C</span>
+                            <GraduationCap className="h-6 w-6" />
                             Campus AI
                         </Link>
                     </div>
@@ -71,7 +72,7 @@ const Navbar = ({ hideThemeToggle = false }) => {
                                     key={link.name}
                                     to={link.path}
                                     className={({ isActive }) =>
-                                        `px-4 py-2 rounded-xl text-[11px] uppercase tracking-wider font-bold transition-all duration-200 flex items-center gap-2 ${isActive
+                                        `px-4 py-2 rounded-xl text-xs uppercase tracking-wider font-bold transition-all duration-200 flex items-center gap-2 ${isActive
                                             ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 shadow-sm'
                                             : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800'
                                         }`
@@ -134,20 +135,52 @@ const Navbar = ({ hideThemeToggle = false }) => {
                                     title="Sign Out"
                                 >
                                     <LogOut className="h-4 w-4" />
-                                    <span className="text-[11px] font-bold uppercase tracking-wider">Sign Out</span>
+                                    <span className="text-xs font-bold uppercase tracking-wider">Sign Out</span>
                                 </button>
                             </>
                         )}
 
                         {/* Mobile menu button */}
-                        <div className="md:hidden flex items-center">
-                            <button className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none p-2">
-                                <Menu className="h-6 w-6" />
-                            </button>
-                        </div>
+                        {!isMarketingPage && (
+                            <div className="md:hidden flex items-center">
+                                <button
+                                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                    className={`text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none p-2 rounded-lg transition-colors ${isMenuOpen ? 'bg-gray-100 dark:bg-gray-800 text-blue-600 dark:text-blue-400' : ''
+                                        }`}
+                                >
+                                    <Menu className="h-6 w-6" />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
+
+            {/* Mobile Navigation Menu */}
+            {!isMarketingPage && isMenuOpen && (
+                <div className="md:hidden border-t border-gray-100 dark:border-white/5 bg-white dark:bg-[#060912] animate-slide-down">
+                    <div className="px-4 py-4 space-y-1">
+                        {navLinks.map((link) => (
+                            <NavLink
+                                key={link.name}
+                                to={link.path}
+                                onClick={() => setIsMenuOpen(false)}
+                                className={({ isActive }) =>
+                                    `px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 flex items-center gap-3 ${isActive
+                                        ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 shadow-sm'
+                                        : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                                    }`
+                                }
+                            >
+                                <span className={location.pathname === link.path ? 'text-blue-600 dark:text-blue-400' : ''}>
+                                    {link.icon}
+                                </span>
+                                <span>{link.name}</span>
+                            </NavLink>
+                        ))}
+                    </div>
+                </div>
+            )}
         </nav>
     );
 };

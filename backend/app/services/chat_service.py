@@ -192,12 +192,13 @@ async def process_chat(
 
     session.messages.append(user_msg)
 
-    # RAG framework check (already present)
-    rag_context = await rag_service.query_knowledge_by_regulation(user_message)
+    # --- RAG Injection ---
     context_str = ""
-    if rag_context:
-        for reg, chunks in rag_context.items():
-            context_str += f"\n--- {reg} Regulation ---\n" + "\n".join(chunks)
+    if mode == "academic":
+        rag_context = await rag_service.query_knowledge_by_regulation(user_message)
+        if rag_context:
+            for reg, chunks in rag_context.items():
+                context_str += f"\n--- {reg} Regulation ---\n" + "\n".join(chunks)
 
     # Route agent based on arbitrary mode determination
     try:
@@ -306,11 +307,12 @@ async def process_chat_stream(
         yield {"mode": mode, "status": "METADATA", "metadata": {"sources": search_results, "platform_links": platform_links}}
 
     # --- RAG Injection ---
-    rag_context = await rag_service.query_knowledge_by_regulation(user_message)
     context_str = ""
-    if rag_context:
-        for reg, chunks in rag_context.items():
-            context_str += f"\n--- {reg} Regulation ---\n" + "\n".join(chunks)
+    if mode == "academic":
+        rag_context = await rag_service.query_knowledge_by_regulation(user_message)
+        if rag_context:
+            for reg, chunks in rag_context.items():
+                context_str += f"\n--- {reg} Regulation ---\n" + "\n".join(chunks)
 
     full_reply: list[str] = []
 

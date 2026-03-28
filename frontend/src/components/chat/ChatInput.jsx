@@ -109,12 +109,16 @@ export default function ChatInput({ onSend, disabled, voiceState, onVoiceToggle,
                 {/* Text Area */}
                 <textarea
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => {
+                        setInput(e.target.value);
+                        e.target.style.height = "auto";
+                        e.target.style.height = e.target.scrollHeight + "px";
+                    }}
                     onKeyDown={handleKeyDown}
                     placeholder="Type your message..."
                     rows={1}
                     disabled={disabled}
-                    className="flex-1 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none outline-none py-2 px-1 max-h-36 min-h-[40px] text-sm leading-relaxed"
+                    className="flex-1 bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none outline-none py-2 px-1 max-h-60 min-h-[40px] text-sm leading-relaxed overflow-y-auto"
                     style={{ height: input ? 'auto' : '40px' }}
                 />
 

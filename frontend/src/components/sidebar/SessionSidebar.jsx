@@ -69,7 +69,7 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
     };
 
     return (
-        <aside className={`${isOpen ? 'w-64' : 'w-16'} bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col h-full shadow-sm sidebar-transition font-sans relative`}>
+        <aside className={`${isOpen ? 'w-72' : 'w-16'} bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col h-full shadow-sm sidebar-transition font-sans relative`}>
             {/* Toggle Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
@@ -82,22 +82,11 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
 
             {/* Header */}
             <div className={`p-4 border-b border-gray-50 dark:border-gray-800 bg-gray-50/20 dark:bg-gray-800/20 ${!isOpen && 'flex flex-col items-center'}`}>
-                <div className={`flex items-center gap-2 ${isOpen ? 'mb-4' : 'mb-0'}`}>
-                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 flex-shrink-0 text-white">
-                        <GraduationCap className="w-5 h-5" />
-                    </div>
-                    {isOpen && (
-                        <div className="min-w-0">
-                            <h1 className="text-xs font-black text-gray-900 dark:text-gray-100 tracking-tight uppercase truncate">Campus AI</h1>
-                            <p className="text-[8px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">OS</p>
-                        </div>
-                    )}
-                </div>
 
                 {isOpen ? (
                     <button
                         onClick={handleNewChat}
-                        className="w-full btn-primary flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest py-2 rounded-lg"
+                        className="w-full btn-primary flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-widest py-2.5 rounded-lg"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -121,7 +110,7 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
             <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar overflow-x-hidden">
                 {isOpen && (
                     <div className="px-2 mb-1">
-                        <span className="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Sessions</span>
+                        <span className="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Sessions</span>
                     </div>
                 )}
                 {sessions.map((session) => (
@@ -157,11 +146,11 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
                                         onChange={(e) => setEditTitle(e.target.value)}
                                         onBlur={handleRename}
                                         onKeyDown={handleKeyDown}
-                                        className="flex-1 bg-white dark:bg-gray-800 border border-blue-300 dark:border-blue-700 rounded px-1.5 py-0.5 text-[11px] focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 outline-none text-gray-900 dark:text-gray-100"
+                                        className="flex-1 bg-white dark:bg-gray-800 border border-blue-300 dark:border-blue-700 rounded px-1.5 py-0.5 text-xs focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 outline-none text-gray-900 dark:text-gray-100"
                                         onClick={(e) => e.stopPropagation()}
                                     />
                                 ) : (
-                                    <span className="flex-1 text-[11px] truncate leading-tight">{session.title}</span>
+                                    <span className="flex-1 text-sm truncate leading-tight">{session.title}</span>
                                 )}
 
                                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-all">
@@ -210,8 +199,8 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
                                     <Sparkles className="w-4 h-4" />
                                 </div>
                                 <div className="text-left">
-                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Personalization</p>
-                                    <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Custom AI Logic</p>
+                                    <p className="text-sm font-black uppercase tracking-widest leading-none">Personalization</p>
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Custom AI Logic</p>
                                 </div>
                             </button>
 
@@ -226,8 +215,8 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
                                     <UserIcon className="w-4 h-4" />
                                 </div>
                                 <div className="text-left">
-                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Profile</p>
-                                    <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">My Account</p>
+                                    <p className="text-sm font-black uppercase tracking-widest leading-none">Profile</p>
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">My Account</p>
                                 </div>
                             </button>
 
@@ -242,8 +231,8 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
                                     <Settings className="w-4 h-4" />
                                 </div>
                                 <div className="text-left">
-                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Settings</p>
-                                    <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">General Preferences</p>
+                                    <p className="text-sm font-black uppercase tracking-widest leading-none">Settings</p>
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">General Preferences</p>
                                 </div>
                             </button>
 
@@ -258,8 +247,8 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
                                     <HelpCircle className="w-4 h-4" />
                                 </div>
                                 <div className="text-left">
-                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Help</p>
-                                    <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Support & FAQs</p>
+                                    <p className="text-sm font-black uppercase tracking-widest leading-none">Help</p>
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Support & FAQs</p>
                                 </div>
                             </button>
 
@@ -276,8 +265,8 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
                                     <LogOut className="w-4 h-4" />
                                 </div>
                                 <div className="text-left">
-                                    <p className="text-[10px] font-black uppercase tracking-widest leading-none">Logout</p>
-                                    <p className="text-[8px] text-red-400/60 font-bold uppercase tracking-widest mt-0.5">Terminate Session</p>
+                                    <p className="text-sm font-black uppercase tracking-widest leading-none">Logout</p>
+                                    <p className="text-xs text-red-400/60 font-bold uppercase tracking-widest mt-0.5">Terminate Session</p>
                                 </div>
                             </button>
                         </div>
@@ -293,8 +282,8 @@ export default function SessionSidebar({ isOpen, setIsOpen }) {
                     </div>
                     {isOpen && (
                         <div className="flex-1 min-w-0">
-                            <p className="text-[10px] font-black text-gray-700 dark:text-gray-300 truncate tracking-tight">{user?.nickname || user?.email?.split('@')[0] || 'User'}</p>
-                            <p className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter">My Account</p>
+                            <p className="text-sm font-black text-gray-700 dark:text-gray-300 truncate tracking-tight">{user?.nickname || user?.email?.split('@')[0] || 'User'}</p>
+                            <p className="text-xs text-gray-400 font-bold uppercase tracking-tighter">My Account</p>
                         </div>
                     )}
                     <div className={`text-gray-400 transition-transform duration-300 ${isProfileMenuOpen ? 'rotate-180' : ''}`}>

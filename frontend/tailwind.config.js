@@ -49,6 +49,7 @@ export default {
                 'float': 'float 6s ease-in-out infinite',
                 'glow-pulse': 'glowPulse 2s ease-in-out infinite',
                 'wave-ring': 'waveRing 1.5s ease-out infinite',
+                'slide-down': 'slideDown 0.3s ease-out',
             },
             keyframes: {
                 fadeIn: {
@@ -84,6 +85,10 @@ export default {
                 waveRing: {
                     '0%': { transform: 'scale(1)', opacity: '0.6' },
                     '100%': { transform: 'scale(2.5)', opacity: '0' },
+                },
+                slideDown: {
+                    '0%': { opacity: '0', transform: 'translateY(-10px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' },
                 },
             },
         },

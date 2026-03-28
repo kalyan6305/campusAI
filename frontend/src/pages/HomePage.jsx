@@ -31,13 +31,7 @@ const HomePage = () => {
     };
 
     return (
-        <div className="page-container animate-fade-in flex flex-col h-full overflow-hidden">
-            <header className="mb-4 flex-shrink-0">
-                <h1 className="text-2xl font-black text-gray-900 dark:text-gray-100 tracking-tight flex items-center gap-2">
-                    <span className="text-blue-600">AI</span> Chat Assistant
-                </h1>
-            </header>
-
+        <div className="page-container animate-fade-in flex flex-col h-full overflow-hidden pt-2">
             {/* Chat Container - Standardized Card Style */}
             <div className="flex-grow bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col relative">
                 <div className="flex-grow overflow-hidden flex flex-col">

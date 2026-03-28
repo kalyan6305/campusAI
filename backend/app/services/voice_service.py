@@ -140,12 +140,8 @@ async def process_voice_chat_stream(
     mode = metadata.get("mode", "voice") if metadata else "voice"
     yield {"mode": mode, "status": "START", "token": ""}
 
-    # RAG framework check
-    rag_context = await rag_service.query_knowledge_by_regulation(user_message)
+    # RAG framework check - REMOVED (Restricting RAG to Academics only)
     context_str = ""
-    if rag_context:
-        for reg, chunks in rag_context.items():
-            context_str += f"\n--- {reg} Regulation ---\n" + "\n".join(chunks)
 
     full_reply: list[str] = []
 
