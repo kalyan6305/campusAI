@@ -12,7 +12,7 @@ const api = axios.create({
 
 // ── Request interceptor: attach JWT ──────────────────
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('access_token');
+    const token = sessionStorage.getItem('access_token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -24,7 +24,7 @@ api.interceptors.response.use(
     (res) => res,
     (err) => {
         if (err.response?.status === 401) {
-            localStorage.removeItem('access_token');
+            sessionStorage.removeItem('access_token');
             window.location.href = '/auth';
         }
         return Promise.reject(err);
@@ -67,7 +67,7 @@ export const chatAPI = {
      * @returns {EventSource-like} readable stream
      */
     stream: async (sessionId, message, onToken, onDone, onError, metadata = {}) => {
-        const token = localStorage.getItem('access_token');
+        const token = sessionStorage.getItem('access_token');
         const payload = { session_id: sessionId, message, metadata };
 
         console.log("Campus AI Request:", payload);
@@ -136,7 +136,7 @@ export const voiceAPI = {
     deleteSession: (id) => api.delete(`/voice/sessions/${id}`),
 
     stream: async (sessionId, message, onToken, onDone, onError, metadata = {}) => {
-        const token = localStorage.getItem('access_token');
+        const token = sessionStorage.getItem('access_token');
         const payload = { session_id: sessionId, message, metadata };
 
         try {
@@ -191,7 +191,7 @@ export const voiceAPI = {
 // ── Job Apply ─────────────────────────────────────────
 export const jobApplyAPI = {
     searchJobs: async (role, user_profile, location = 'remote') => {
-        const token = localStorage.getItem('access_token');
+        const token = sessionStorage.getItem('access_token');
         const payload = { role, user_profile, location };
 
         return fetch(`${API_BASE}/job-apply/search`, {
@@ -204,7 +204,7 @@ export const jobApplyAPI = {
         });
     },
     process: async (file, jobData) => {
-        const token = localStorage.getItem('access_token');
+        const token = sessionStorage.getItem('access_token');
         const formData = new FormData();
         formData.append('resume_file', file);
         formData.append('job_data', JSON.stringify(jobData));
@@ -222,7 +222,7 @@ export const jobApplyAPI = {
 // ── Resume Agent ──────────────────────────────────────
 export const resumeAPI = {
     process: async (file, resumeData) => {
-        const token = localStorage.getItem('access_token');
+        const token = sessionStorage.getItem('access_token');
         const formData = new FormData();
         formData.append('resume_file', file);
         formData.append('job_description', resumeData.jobDescription);
@@ -282,6 +282,23 @@ export const interviewAPI = {
 
     predictRounds: (company, role) =>
         api.post('/interview/predict-rounds', { company, role }),
+
+    getMockReport: (role, difficulty, questions, answers) =>
+        api.post('/interview/mock_report', { role, difficulty, questions, answers }),
+
+    getVideos: (query) =>
+        api.get('/interview/videos', { params: { query } }),
+
+    generateDynamicQuestion: (role, company, roundType, difficulty, history, totalQuestions, questionsAsked) =>
+        api.post('/interview/dynamic-question', {
+            role,
+            company: company || 'Generic',
+            round_type: roundType || 'Technical',
+            difficulty: difficulty || 'Mixed',
+            history: history || [],
+            total_questions: totalQuestions || 8,
+            questions_asked: questionsAsked || 0,
+        }),
 };
 
 // ── Research Agent ─────────────────────────────────────────────────────────
@@ -296,7 +313,7 @@ export const researchAPI = {
      * @param {Function} onError - Called with error message string
      */
     analyze: async (mode, query, file, onToken, onDone, onError) => {
-        const token = localStorage.getItem('access_token');
+        const token = sessionStorage.getItem('access_token');
         const formData = new FormData();
         formData.append('mode', mode);
         formData.append('query', query || '');

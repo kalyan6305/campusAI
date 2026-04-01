@@ -108,6 +108,27 @@ async def run_java(code: str) -> dict:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+async def run_c(code: str) -> dict:
+    tmpdir = tempfile.mkdtemp()
+    try:
+        src = os.path.join(tmpdir, "main.c")
+        exe = os.path.join(tmpdir, "main")
+        with open(src, "w", encoding="utf-8") as f:
+            f.write(code)
+        # Compile
+        compile_result = await _run_proc(["gcc", "-o", exe, src])
+        if compile_result["code"] != 0:
+            return {
+                "stdout": "",
+                "stderr": "Compilation error:\n" + compile_result["stderr"],
+                "code": compile_result["code"],
+            }
+        # Run
+        return await _run_proc([exe])
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
+
+
 async def run_cpp(code: str) -> dict:
     tmpdir = tempfile.mkdtemp()
     try:
@@ -180,10 +201,14 @@ async def execute_code(code: str, language: str) -> dict:
         return await run_java(code)
     elif lang == "cpp":
         return await run_cpp(code)
+    elif lang == "c":
+        return await run_c(code)
     elif lang == "sql":
         # Try sqlite3 CLI first, fall back to Python
         result = await run_sql(code)
-        if "not installed" in result.get("stderr", ""):
+        stderr = result.get("stderr", "")
+        # Check for 'not installed' or 'not found' to trigger fallback
+        if "not installed" in stderr or "not found" in stderr:
             return await run_sql_python(code)
         return result
     else:

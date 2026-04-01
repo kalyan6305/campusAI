@@ -6,7 +6,7 @@ import { authAPI } from '../services/api';
 
 const useAuthStore = create((set) => ({
     user: null,
-    token: localStorage.getItem('access_token'),
+    token: sessionStorage.getItem('access_token'),
     isLoading: false,
     error: null,
 
@@ -14,7 +14,7 @@ const useAuthStore = create((set) => ({
         set({ isLoading: true, error: null });
         try {
             const { data } = await authAPI.login(email, password);
-            localStorage.setItem('access_token', data.access_token);
+            sessionStorage.setItem('access_token', data.access_token);
             set({ token: data.access_token, isLoading: false });
             // Fetch user profile
             const profile = await authAPI.me();
@@ -32,7 +32,7 @@ const useAuthStore = create((set) => ({
             await authAPI.register(email, password);
             // Auto-login after register
             const { data } = await authAPI.login(email, password);
-            localStorage.setItem('access_token', data.access_token);
+            sessionStorage.setItem('access_token', data.access_token);
             set({ token: data.access_token, isLoading: false });
             const profile = await authAPI.me();
             set({ user: profile.data });
@@ -49,7 +49,7 @@ const useAuthStore = create((set) => ({
             set({ user: data });
         } catch {
             set({ user: null, token: null });
-            localStorage.removeItem('access_token');
+            sessionStorage.removeItem('access_token');
         }
     },
 
@@ -67,7 +67,7 @@ const useAuthStore = create((set) => ({
     },
 
     logout: () => {
-        localStorage.removeItem('access_token');
+        sessionStorage.removeItem('access_token');
         set({ user: null, token: null });
     },
 

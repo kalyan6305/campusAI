@@ -48,7 +48,7 @@ class InterviewPreparationAgent:
         self.llm = get_llm_provider()
         self.settings = get_settings()
 
-    async def generate_questions(self, role: str, interview_type: str, company: str = "Generic", round_type: Optional[str] = None, difficulty: str = "Intermediate", exclude_questions: Optional[List[str]] = None, user_type: str = "general", experience_years: int = 0, num_questions: int = 5, selected_topic: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def generate_questions(self, role: str, interview_type: str, company: str = "Generic", round_type: Optional[str] = None, difficulty: str = "Intermediate", exclude_questions: Optional[List[str]] = None, user_type: str = "general", experience_years: int = 0, num_questions: int = 5, selected_topic: Optional[str] = None, is_mock: bool = False) -> List[Dict[str, Any]]:
         """Generate interview questions and model answers based on role, company, and round."""
         persona_data = COMPANY_PERSONAS.get(company.lower(), COMPANY_PERSONAS["general"])
         persona = persona_data["persona"]
@@ -62,8 +62,14 @@ class InterviewPreparationAgent:
         if selected_topic and selected_topic != "All topics":
             topic_focus = f"Focus all questions ONLY on the topic: {selected_topic}."
 
+        mock_instruction = ""
+        if is_mock:
+            mock_instruction = f"This is a STRICT MOCK INTERVIEW. Focus on high-pressure, realistic questions. Ensure the difficulty matches '{difficulty}' and questions are more open-ended."
+            persona = f"You are a very senior and demanding interviewer at {company}. " + persona
+
         prompt = f"""
         {persona}
+        {mock_instruction}
 
         You are conducting a {round_type if round_type else interview_type} interview for the role
         of {role} at {company}. The candidate has {experience_years}
@@ -240,6 +246,60 @@ class InterviewPreparationAgent:
                 "suggestions": ["Error processing feedback analysis."],
                 "follow_up_question": None,
                 "interviewer_reaction": "Let's move on."
+            }
+
+    async def generate_mock_report(self, role: str, difficulty: str, questions: List[str], answers: List[str]) -> Dict[str, Any]:
+        """Generate a comprehensive feedback report for a mock interview."""
+        qa_pairs = ""
+        for i, (q, a) in enumerate(zip(questions, answers)):
+            qa_pairs += f"\nQ{i+1}: {q}\nA{i+1}: {a}\n"
+            
+        prompt = f"""
+        You are an expert interview coach evaluating a candidate who just completed a '{difficulty}' difficulty mock interview for the '{role}' role.
+        
+        Here are the questions asked and the candidate's answers:
+        {qa_pairs}
+        
+        Based ONLY on the specific details, concepts, and approaches mentioned in the candidate's answers, provide a highly personalized, constructive performance report. 
+        DO NOT provide generic advice like "communicate clearly" or "review core concepts". You MUST quote or directly reference what they actually said and explain technically why it was good or how specifically they should improve their technical/behavioral point.
+        
+        Format your response as a JSON object:
+        {{
+            "tips": ["Specific tip 1 based on their answers", "Specific tip 2"],
+            "suggestions": ["Suggestion 1", "Suggestion 2"],
+            "areas_of_improvement": ["Area 1", "Area 2"],
+            "question_evaluations": [
+                {{"score": 85, "feedback": "Good answer covering core concepts clearly."}},
+                {{"score": 40, "feedback": "Missed the main requirements."}}
+            ]
+        }}
+        
+        The 'question_evaluations' array MUST have exactly {len(questions)} items, corresponding to the questions in order. The 'score' should be an integer between 0 and 100 representing correctness and relevance.
+        
+        Return ONLY valid JSON. No markdown formatting, no explanations.
+        """
+        messages = [{"role": "system", "content": "You are an expert interviewer. Return only JSON data."},
+                    {"role": "user", "content": prompt}]
+        response = await self.llm.generate(messages)
+        try:
+            content = response.strip()
+            if "```json" in content:
+                content = content.split("```json")[-1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+            
+            start = content.find('{')
+            end = content.rfind('}') + 1
+            if start == -1 or end == 0:
+                raise ValueError("No JSON found")
+            return json.loads(content[start:end])
+        except Exception as e:
+            logger.error(f"Error generating mock report: {e}")
+            return {
+                "tips": ["Practice articulating your thoughts clearly."],
+                "suggestions": ["Review core concepts for this role.", "Use the STAR method for behavioral questions."],
+                "areas_of_improvement": ["Technical depth", "Communication structure"],
+                "question_evaluations": [{"score": 0, "feedback": "Could not analyze the answer."} for _ in questions]
             }
 
     async def generate_round_summary(self, role: str, company: str, round_name: str, dimension_avgs: Dict[str, float]) -> Dict[str, Any]:
@@ -509,3 +569,104 @@ class InterviewPreparationAgent:
                 "rounds": ["Technical Interview", "HR Interview"],
                 "justification": "Default standard process fallback."
             }
+
+    def calculate_topic_mastery(self, performance_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Calculate mastery levels for different topics based on performance history."""
+        mastery: Dict[str, Any] = {}
+        for entry in performance_data:
+            topic = str(entry.get("topic", "General"))
+            score = float(entry.get("score", 0))
+            
+            if topic not in mastery:
+                mastery[topic] = {"scores": [], "average": 0.0, "level": "Beginner"}
+            
+            mastery[topic]["scores"].append(score)
+            scores = mastery[topic]["scores"]
+            avg = sum(scores) / len(scores)
+            mastery[topic]["average"] = avg
+            
+            if avg > 90: mastery[topic]["level"] = "Expert"
+            elif avg > 75: mastery[topic]["level"] = "Advanced"
+            elif avg > 60: mastery[topic]["level"] = "Intermediate"
+            else: mastery[topic]["level"] = "Beginner"
+            
+        return mastery
+
+    async def generate_next_question(
+        self,
+        role: str,
+        company: str = "Generic",
+        round_type: str = "Technical",
+        difficulty: str = "Mixed",
+        history: Optional[List[Dict[str, str]]] = None,
+        total_questions: int = 8,
+        questions_asked: int = 0,
+    ) -> Dict[str, Any]:
+        """
+        Generate the next interview question dynamically based on full conversation history.
+        - If the last answer was weak/partial → ask a follow-up probe on the same concept.
+        - If the answer was solid → advance to a fresh topic.
+        - Mix of adaptive + new questions ensures the interview feels real.
+        """
+        history = history or []
+        persona_data = COMPANY_PERSONAS.get(company.lower(), COMPANY_PERSONAS["general"])
+        persona = persona_data["persona"]
+
+        # Build history block for the prompt
+        history_block = ""
+        if history:
+            for i, pair in enumerate(history):
+                history_block += f"\nQ{i+1}: {pair.get('question', '')}\nA{i+1}: {pair.get('answer', '') or '(no answer given)'}\n"
+
+        remaining = total_questions - questions_asked
+
+        prompt = f"""
+{persona}
+
+You are conducting a live {round_type} mock interview for the role of {role} at {company}.
+Difficulty profile: {difficulty}.
+
+Interview so far (Q&A history):
+{history_block if history_block else "(This is the first question — no history yet.)"}
+
+Your task:
+1. Analyse the candidate's LAST answer (if any).
+2. Decide:
+   - If the last answer was WEAK, INCOMPLETE, or VAGUE → ask a targeted follow-up probe that specifically addresses the gap. Set is_follow_up = true.
+   - If the last answer was STRONG or if there is no history yet → ask a brand-new question on a fresh, important topic for this role/round. Set is_follow_up = false.
+   - Occasionally (every 3rd question), regardless of answer quality, move to a completely new topic to maintain variety.
+3. {remaining} question(s) remain in the session. Adjust depth/breadth accordingly (go broader early, deeper later).
+
+Return ONLY this JSON object. No markdown. No extra text.
+{{
+  "question": "The exact question to ask the candidate",
+  "topic": "One-word or short topic label (e.g. 'Arrays', 'Leadership', 'System Design')",
+  "difficulty": "Easy | Medium | Hard",
+  "is_follow_up": true | false,
+  "follow_up_reason": "Brief explanation if is_follow_up is true, else null"
+}}
+"""
+        messages = [
+            {"role": "system", "content": "You are an expert technical interviewer. Return only JSON."},
+            {"role": "user", "content": prompt},
+        ]
+        response = await self.llm.generate(messages)
+        try:
+            content = response.strip()
+            if "```json" in content:
+                content = content.split("```json")[-1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+            start = content.find("{")
+            end = content.rfind("}") + 1
+            return json.loads(content[start:end])
+        except Exception as e:
+            logger.error(f"Error generating dynamic question: {e}")
+            return {
+                "question": f"Can you walk me through a challenging {round_type.lower()} problem you have solved recently?",
+                "topic": "General",
+                "difficulty": "Medium",
+                "is_follow_up": False,
+                "follow_up_reason": None,
+            }
+

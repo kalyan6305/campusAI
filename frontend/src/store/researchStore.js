@@ -22,7 +22,8 @@ const useResearchStore = create((set, get) => ({
         });
         
         try {
-            const token = localStorage.getItem('access_token');
+            const token = sessionStorage.getItem('access_token');
+            // Hardcoding base URL to standard 8000 for FastAPI, though environment variables are preferred
             const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
             
             const response = await fetch(`${baseUrl}/api/v1/research/stream`, {

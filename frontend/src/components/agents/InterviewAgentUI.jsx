@@ -1,6 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { interviewAPI } from '../../services/api';
-import { Target, Flag, BarChart4 } from 'lucide-react';
+import { useGamificationStore } from '../../store/gamificationStore';
+import { 
+    Target, Flag, BarChart4, BookOpen, Terminal, Trophy, 
+    Layout, ChevronRight, Clock, Star, ArrowLeft, Zap, Award
+} from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import GamificationDashboard from './GamificationDashboard';
+import ArenaGame from './ArenaGame';
+import LiveInterviewSession from './LiveInterviewSession';
 
 const isAptitudeRound = (round) => {
     if (!round) return false;
@@ -267,22 +275,7 @@ const COMPANY_ROUNDS = {
 };
 
 const InterviewAgentUI = () => {
-    // Stage: 'selection' | 'analysis' | 'topics' | 'questions' | 'results' | 'round_summary'
-    const [stage, setStage] = useState('selection');
-    const [role, setRole] = useState('Software Developer');
-    const [company, setCompany] = useState('Generic');
-    const [questions, setQuestions] = useState([]);
-    const [suggestions, setSuggestions] = useState([]);
-    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-    const [listeningIdx, setListeningIdx] = useState(null);
-    const recognitionRef = useRef(null);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [isGeneratingMore, setIsGeneratingMore] = useState(false);
-    const [doubtQuery, setDoubtQuery] = useState('');
-    const [doubtResponse, setDoubtResponse] = useState(null);
-    const [studyQAs, setStudyQAs] = useState([]);
-    const [isGeneratingStudy, setIsGeneratingStudy] = useState(false);
-    const [isClarifying, setIsClarifying] = useState(false);
+    // View: 'home' | 'question_bank' | 'mock_interview' | 'gamification'
     const [activeTab, setActiveTab] = useState('practice');
     const [activeDoubtQuestion, setActiveDoubtQuestion] = useState(null);
     const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
@@ -291,25 +284,160 @@ const InterviewAgentUI = () => {
     const [allRoundResults, setAllRoundResults] = useState([]);
     const [finalReport, setFinalReport] = useState(null);
     const [isPredictingRounds, setIsPredictingRounds] = useState(false);
-    const [predictedRounds, setPredictedRounds] = useState([]);
-    const [customCompany, setCustomCompany] = useState('');
-    const [customRole, setCustomRole] = useState('');
-    const [customExperience, setCustomExperience] = useState('');
-    const [experienceYears, setExperienceYears] = useState(2);
-    const [experienceLevel, setExperienceLevel] = useState('Intermediate');
-    const [selectedRound, setSelectedRound] = useState(null);
-    const [practiseAllRounds, setPractiseAllRounds] = useState(false);
+    const [arenaLevel, setArenaLevel] = useState(null);
+    const [view, setView] = useState('home');
+    const [role, setRole] = useState('Software Developer');
+    const [company, setCompany] = useState('Generic');
+    const { addXP, updateChallengeProgress, streak } = useGamificationStore();
+
+    // --- MOCK INTERVIEW SPECIFIC STATES ---
+    const [mockConfig, setMockConfig] = useState({ role: '', difficulty: 'Mixed', duration: 15 });
+    const [isMockSessionActive, setIsMockSessionActive] = useState(false);
+    const [isMockReportActive, setIsMockReportActive] = useState(false);
+    const [mockQuestions, setMockQuestions] = useState([]);
+    const [currentMockQuestionIndex, setCurrentMockQuestionIndex] = useState(0);
+    const [mockResponses, setMockResponses] = useState({});
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [mockDurationLeft, setMockDurationLeft] = useState(0);
+    const mockTimerRef = useRef(null);
+    const [isGeneratingMock, setIsGeneratingMock] = useState(false);
+    const [isAutoReadEnabled, setIsAutoReadEnabled] = useState(true);
+    const [mockReportFeedback, setMockReportFeedback] = useState(null);
+    const [isGeneratingMockReport, setIsGeneratingMockReport] = useState(false);
+
+    // --- LIVE INTERVIEW STATE ---
+    const [isLiveSessionActive, setIsLiveSessionActive] = useState(false);
+
+    // --- MOCK INTERVIEW VIDEOS STATES ---
+    const [mockTab, setMockTab] = useState('setup');
+    const [videoQuery, setVideoQuery] = useState('');
+    const [videos, setVideos] = useState([]);
+    const [isLoadingVideos, setIsLoadingVideos] = useState(false);
+    const [selectedVideoId, setSelectedVideoId] = useState(null);
+
+    useEffect(() => {
+        if (company && role) {
+            setVideoQuery(`${company !== 'Generic' ? company : ''} ${role !== 'Other' ? role : ''} mock interview`.trim());
+        }
+    }, [company, role]);
+
+    const handleFetchVideos = async () => {
+        if (!videoQuery.trim()) return;
+        setIsLoadingVideos(true);
+        try {
+            const res = await interviewAPI.getVideos(videoQuery);
+            setVideos(res.data.videos || []);
+        } catch(e) {
+            console.error("Failed to fetch videos", e);
+        } finally {
+            setIsLoadingVideos(false);
+        }
+    };
+
+    const speakText = (text) => {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.onstart = () => setIsSpeaking(true);
+            utterance.onend = () => setIsSpeaking(false);
+            utterance.onerror = () => setIsSpeaking(false);
+            window.speechSynthesis.speak(utterance);
+        }
+    };
     
-    // NEW STATES for the improved flow
-    const [selectedTopic, setSelectedTopic] = useState("All topics");
-    const [roundTopics, setRoundTopics] = useState([]);
-    const [analysisStep, setAnalysisStep] = useState(0);
-    const [isGeneratingTopics, setIsGeneratingTopics] = useState(false);
-    const [isMCQMode, setIsMCQMode] = useState(false);
-    const [sessionStreak, setSessionStreak] = useState(0);
-    const [topicPerformance, setTopicPerformance] = useState({});
-    const [mcqResults, setMcqResults] = useState([]);
-    const [teachMeCache, setTeachMeCache] = useState({});
+    // Stop speaking if component unmounts or flow changes
+    React.useEffect(() => {
+        return () => {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        };
+    }, []);
+
+    // --- MOCK INTERVIEW AUTO-READ ---
+    React.useEffect(() => {
+        if (isMockSessionActive && isAutoReadEnabled && mockQuestions[currentMockQuestionIndex]) {
+            // Slight delay to allow UI to transition before speaking
+            const timeoutId = setTimeout(() => {
+                speakText(mockQuestions[currentMockQuestionIndex].question);
+            }, 500);
+            return () => clearTimeout(timeoutId);
+        }
+    }, [currentMockQuestionIndex, isMockSessionActive, mockQuestions, isAutoReadEnabled]);
+
+    // --- MOCK TIMER HOOK ---
+    React.useEffect(() => {
+        if (isMockSessionActive && mockDurationLeft > 0) {
+            mockTimerRef.current = setInterval(() => {
+                setMockDurationLeft(prev => {
+                    if (prev <= 1) {
+                        clearInterval(mockTimerRef.current);
+                        setIsMockSessionActive(false);
+                        setIsMockReportActive(true);
+                        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                        if (recognitionRef.current) recognitionRef.current.stop();
+                        setListeningIdx(null);
+                        setIsSpeaking(false);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+        return () => clearInterval(mockTimerRef.current);
+    }, [isMockSessionActive, mockDurationLeft]);
+
+    const toggleSpeechRecognitionMock = () => {
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            alert("Speech recognition is not supported in this browser.");
+            return;
+        }
+        
+        if (isSpeaking) {
+            window.speechSynthesis.cancel();
+            setIsSpeaking(false);
+        }
+
+        if (listeningIdx === 'mock') {
+            recognitionRef.current?.stop();
+            setListeningIdx(null);
+            return;
+        }
+
+        const SpeechRecon = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognitionRef.current = new SpeechRecon();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+
+        recognitionRef.current.onresult = (event) => {
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                }
+            }
+            if (finalTranscript) {
+                setMockResponses(prev => ({
+                    ...prev,
+                    [currentMockQuestionIndex]: (prev[currentMockQuestionIndex] || '') + finalTranscript + ' '
+                }));
+            }
+        };
+
+        recognitionRef.current.onerror = (event) => {
+            console.error(event.error);
+            setListeningIdx(null);
+        };
+
+        recognitionRef.current.onend = () => {
+            if (listeningIdx === 'mock') setListeningIdx(null);
+        };
+
+        recognitionRef.current.start();
+        setListeningIdx('mock');
+    };
 
     const getRounds = () => {
         if (predictedRounds.length > 0) return predictedRounds;
@@ -338,189 +466,9 @@ const InterviewAgentUI = () => {
         }
     };
 
-    const handleGenerate = async (roundIdx = 0, isAppend = false) => {
-        const rounds = getRounds();
-        const rName = rounds[roundIdx];
-        const isAptitude = isAptitudeRound(rName);
-        setIsMCQMode(isAptitude);
+    // Note: Question Bank generation removed safely
 
-        // Transition to Analysis Screen
-        setStage('analysis');
-        setAnalysisStep(0);
-        
-        // Parallel work: Fetch topics while animating steps
-        const stepTimer = setInterval(() => {
-            setAnalysisStep(prev => prev < 4 ? prev + 1 : prev);
-        }, 750);
-
-        try {
-            const res = await interviewAPI.getRoundTopics(company, rName, role);
-            setRoundTopics(res.data?.topics || res.data || []);
-            
-            clearInterval(stepTimer);
-            setAnalysisStep(4);
-            setTimeout(() => {
-                setStage('topics');
-                setCurrentRoundIndex(roundIdx);
-            }, 500);
-        } catch (e) {
-            console.error("Failed to fetch topics", e);
-            setRoundTopics(["General", "Core Concepts", "Implementation"]);
-            clearInterval(stepTimer);
-            setAnalysisStep(4);
-            setTimeout(() => setStage('topics'), 500);
-        }
-    };
-
-    const startPractice = async (topic = "All topics") => {
-        setSelectedTopic(topic);
-        setIsGenerating(true);
-        setQuestions([]);
-        setStage('questions');
-        setActiveTab('practice');
-
-        const rounds = getRounds();
-        const rName = rounds[currentRoundIndex];
-        const companyData = (COMPANY_ROUNDS[company.toLowerCase()] || COMPANY_ROUNDS.other);
-        const actualRound = companyData.rounds.find(r => r.name === rName) || companyData.rounds[0];
-
-        try {
-            let res;
-            if (isMCQMode) {
-                res = await interviewAPI.generateMCQ(company, rName, role, topic === "All topics" ? null : topic, 10);
-                setQuestions(res.data || []);
-            } else {
-                res = await interviewAPI.generate(
-                    role, 
-                    actualRound.id || 'tech', 
-                    company, 
-                    rName, 
-                    experienceLevel, 
-                    [], 
-                    userType, 
-                    experienceYears, 
-                    10, 
-                    topic === "All topics" ? null : topic
-                );
-                // Ensure questions is an array
-                const qList = res.data.questions || res.data || [];
-                setQuestions(qList.map(q => ({ ...q, isSubmitted: false, userAnswer: "", feedback: null })));
-            }
-        } catch (e) {
-            console.error("Generation failed", e);
-            alert("Failed to generate questions. Please try again.");
-        } finally {
-            setIsGenerating(false);
-        }
-    };
-
-    const loadMoreQuestions = async () => {
-        setIsGeneratingMore(true);
-        const rounds = getRounds();
-        const rName = rounds[currentRoundIndex];
-        const companyData = (COMPANY_ROUNDS[company.toLowerCase()] || COMPANY_ROUNDS.other);
-        const actualRound = companyData.rounds.find(r => r.name === rName) || companyData.rounds[0];
-
-        try {
-            let res;
-            if (isMCQMode) {
-                res = await interviewAPI.generateMCQ(company, rName, role, selectedTopic === "All topics" ? null : selectedTopic, 10);
-                setQuestions(prev => [...prev, ...(res.data || [])]);
-            } else {
-                res = await interviewAPI.generate(
-                    role, 
-                    actualRound.id || 'tech', 
-                    company, 
-                    rName, 
-                    experienceLevel, 
-                    questions.map(q => q.question),
-                    userType, 
-                    experienceYears, 
-                    10, 
-                    selectedTopic === "All topics" ? null : selectedTopic
-                );
-                const qList = res.data.questions || res.data || [];
-                setQuestions(prev => [...prev, ...qList.map(q => ({ ...q, isSubmitted: false, userAnswer: "", feedback: null }))]);
-            }
-        } catch (e) {
-            console.error("Failed to load more questions", e);
-            alert("Failed to load more questions. Please try again.");
-        } finally {
-            setIsGeneratingMore(false);
-        }
-    };
-
-    const generateStudyMaterial = async () => {
-        setIsGeneratingStudy(true);
-        const rounds = getRounds();
-        const rName = rounds[currentRoundIndex];
-        const companyData = (COMPANY_ROUNDS[company.toLowerCase()] || COMPANY_ROUNDS.other);
-        const actualRound = companyData.rounds.find(r => r.name === rName) || companyData.rounds[0];
-
-        try {
-            let res;
-            if (isMCQMode) {
-                res = await interviewAPI.generateMCQ(company, rName, role, selectedTopic === "All topics" ? null : selectedTopic, 10);
-                setStudyQAs(res.data || []);
-            } else {
-                res = await interviewAPI.generate(
-                    role, 
-                    actualRound.id || 'tech', 
-                    company, 
-                    rName, 
-                    experienceLevel, 
-                    [], 
-                    userType, 
-                    experienceYears, 
-                    10, 
-                    selectedTopic === "All topics" ? null : selectedTopic
-                );
-                const qList = res.data.questions || res.data || [];
-                setStudyQAs(qList);
-            }
-        } catch (e) {
-            console.error("Study generation failed", e);
-            alert("Failed to generate study Q&As. Please try again.");
-        } finally {
-            setIsGeneratingStudy(false);
-        }
-    };
-
-    const loadMoreStudyQuestions = async () => {
-        setIsGeneratingStudy(true);
-        const rounds = getRounds();
-        const rName = rounds[currentRoundIndex];
-        const companyData = (COMPANY_ROUNDS[company.toLowerCase()] || COMPANY_ROUNDS.other);
-        const actualRound = companyData.rounds.find(r => r.name === rName) || companyData.rounds[0];
-
-        try {
-            let res;
-            if (isMCQMode) {
-                res = await interviewAPI.generateMCQ(company, rName, role, selectedTopic === "All topics" ? null : selectedTopic, 10, studyQAs.map(q => q.question));
-                setStudyQAs(prev => [...prev, ...(res.data || [])]);
-            } else {
-                res = await interviewAPI.generate(
-                    role, 
-                    actualRound.id || 'tech', 
-                    company, 
-                    rName, 
-                    experienceLevel, 
-                    studyQAs.map(q => q.question),
-                    userType, 
-                    experienceYears, 
-                    10, 
-                    selectedTopic === "All topics" ? null : selectedTopic
-                );
-                const qList = res.data.questions || res.data || [];
-                setStudyQAs(prev => [...prev, ...qList]);
-            }
-        } catch (e) {
-            console.error("Failed to load more study questions", e);
-            alert("Failed to load more questions. Please try again.");
-        } finally {
-            setIsGeneratingStudy(false);
-        }
-    };
+    // Note: Question Bank logic (practice, study, load more) removed safely
 
     const getRunningAverages = () => {
         const dimensions = ['depth', 'edge_cases', 'communication', 'correctness'];
@@ -685,967 +633,737 @@ const InterviewAgentUI = () => {
     };
 
     const reset = () => {
-        setStage('selection');
+        setView('home');
         setRole('Software Developer');
         setCompany('Generic');
-        setQuestions([]);
-        setSuggestions([]);
         setAllRoundResults([]);
         setFinalReport(null);
         setCurrentRoundIndex(0);
         setSessionStreak(0);
         setTopicPerformance({});
-        setMcqResults([]);
     };
 
-    return (
-        <div className="flex flex-col h-full space-y-6 p-6 overflow-y-auto custom-scrollbar bg-gray-50/30 dark:bg-gray-900/10">
-            {stage === 'analysis' && (
-                <div className="max-w-4xl mx-auto w-full py-20 animate-fade-in">
-                    <div className="bg-white dark:bg-gray-800 p-12 rounded-[4rem] border border-gray-100 dark:border-gray-700 shadow-2xl text-center space-y-12">
-                        <div className="relative w-32 h-32 mx-auto">
-                            <div className="absolute inset-0 border-8 border-blue-50 dark:border-blue-900/30 rounded-full"></div>
-                            <div className={`absolute inset-0 border-8 border-blue-600 rounded-full border-t-transparent animate-spin`}></div>
-                            <div className="absolute inset-0 flex items-center justify-center text-3xl">
-                                {analysisStep === 0 && "🔍"}
-                                {analysisStep === 1 && "📋"}
-                                {analysisStep === 2 && "💻"}
-                                {analysisStep === 3 && "🚀"}
-                                {analysisStep === 4 && "✅"}
-                            </div>
-                        </div>
-                        
-                        <div className="space-y-4">
-                            <h3 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Synthesizing Your Interview</h3>
-                            <div className="flex flex-col gap-3 max-w-sm mx-auto">
-                                {[
-                                    { id: 1, text: "Analyzing job requirements" },
-                                    { id: 2, text: `Researching ${company}'s culture` },
-                                    { id: 3, text: "Curating industry-standard questions" },
-                                    { id: 4, text: "Preparing technical assessment" }
-                                ].map(step => (
-                                    <div key={step.id} className={`flex items-center gap-4 text-left transition-all duration-500 ${analysisStep >= step.id ? 'opacity-100 translate-x-0' : 'opacity-20 translate-x-4'}`}>
-                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${analysisStep >= step.id ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
-                                            {analysisStep >= step.id ? "✓" : step.id}
-                                        </div>
-                                        <span className={`text-sm font-bold ${analysisStep >= step.id ? 'text-gray-900 dark:text-white' : 'text-gray-400'}`}>
-                                            {step.text}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+    // Launch the fully interactive live interview
+    const startLiveInterview = () => {
+        if (!mockConfig.role) { alert('Please enter a role first.'); return; }
+        setIsLiveSessionActive(true);
+        setIsMockSessionActive(false);
+        setIsMockReportActive(false);
+    };
+
+    // Called when LiveInterviewSession finishes — bridge into existing report flow
+    const handleLiveFinish = async (questions, responses) => {
+        setIsLiveSessionActive(false);
+        setMockQuestions(questions);
+        setMockResponses(responses);
+        setIsMockReportActive(true);
+
+        // Generate the AI report automatically
+        setMockReportFeedback(null);
+        setIsGeneratingMockReport(true);
+        try {
+            const qs = questions.map(q => q.question);
+            const ans = questions.map((_, idx) => responses[idx] || 'No answer provided.');
+            const res = await interviewAPI.getMockReport(mockConfig.role, mockConfig.difficulty, qs, ans);
+            setMockReportFeedback(res.data);
+        } catch (e) {
+            console.error('Failed to generate mock report:', e);
+        } finally {
+            setIsGeneratingMockReport(false);
+        }
+    };
+
+    const startMockInterview = async () => {
+        setIsGeneratingMock(true);
+        try {
+            const numQuestions = Math.max(3, Math.round(mockConfig.duration / 1.5));
+            const response = await interviewAPI.generate(
+                mockConfig.role || 'Software Developer',
+                'Technical Interview',
+                company,
+                null,
+                mockConfig.difficulty,
+                [],
+                'general',
+                2,
+                numQuestions,
+                null,
+                true
+            );
+            
+            let fetchedQs = [];
+            if (response.data?.questions) {
+                fetchedQs = response.data.questions;
+            } else if (Array.isArray(response.data)) {
+                fetchedQs = response.data;
+            } else {
+                fetchedQs = [response.data];
+            }
+
+            setMockQuestions(fetchedQs);
+            setCurrentMockQuestionIndex(0);
+            setMockResponses({});
+            setIsMockSessionActive(true);
+            setIsMockReportActive(false);
+            setMockDurationLeft(mockConfig.duration * 60);
+        } catch (error) {
+            console.error("Failed to start mock interview:", error);
+            alert("Failed to initialize mock interview. Please try again.");
+        } finally {
+            setIsGeneratingMock(false);
+        }
+    };
+
+    const finishMockInterview = async () => {
+        clearInterval(mockTimerRef.current);
+        setIsMockSessionActive(false);
+        setIsMockReportActive(true);
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        if (recognitionRef.current) recognitionRef.current.stop();
+        setListeningIdx(null);
+        setIsSpeaking(false);
+
+        // Fetch AI Feedback for Mock Report
+        setMockReportFeedback(null);
+        setIsGeneratingMockReport(true);
+        try {
+            const qs = mockQuestions.map(q => q.question);
+            const ans = mockQuestions.map((_, idx) => mockResponses[idx] || "No answer provided.");
+            const response = await interviewAPI.getMockReport(mockConfig.role, mockConfig.difficulty, qs, ans);
+            setMockReportFeedback(response.data);
+        } catch (error) {
+            console.error("Failed to fetch mock report feedback:", error);
+        } finally {
+            setIsGeneratingMockReport(false);
+        }
+    };
+    
+    const submitMockAnswerAndNext = () => {
+        if (currentMockQuestionIndex < mockQuestions.length - 1) {
+            // Gamification: Update progress
+            updateChallengeProgress(1); // Answer 5 questions
+            addXP(10, 'Answered mock question');
+            
+            setCurrentMockQuestionIndex(prev => prev + 1);
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        } else {
+            finishMockInterview();
+        }
+    };
+
+    const reviewLastMockQuestion = () => {
+        if (currentMockQuestionIndex > 0) {
+            setCurrentMockQuestionIndex(prev => prev - 1);
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        }
+    };
+
+    const formatTime = (seconds) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    };
+
+    const renderMockConfig = () => (
+        <div className="max-w-4xl mx-auto w-full space-y-12 py-12 animate-slide-up">
+            <header className="flex items-center justify-between">
+                <button onClick={() => setView('home')} className="p-3 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 transition-all shadow-sm">
+                    <ArrowLeft className="w-5 h-5 text-gray-400" />
+                </button>
+                <div className="text-center">
+                    <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Mock Interview Setup</h2>
+                    <p className="text-gray-500 font-bold text-[10px] uppercase tracking-widest mt-1">Configure your simulation</p>
                 </div>
-            )}
+                <div className="w-11 h-11"></div>
+            </header>
 
-            {stage === 'topics' && (
-                <div className="max-w-4xl mx-auto w-full space-y-10 animate-slide-up py-10">
-                    <div className="flex bg-white dark:bg-gray-800 p-8 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-xl items-center justify-between mb-8">
-                        <div className="flex items-center gap-6">
-                            <button onClick={reset} className="w-12 h-12 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center text-gray-400 hover:bg-blue-600 hover:text-white transition-all">
-                                <span className="text-xl">←</span>
-                            </button>
-                            <div className="text-left">
-                                <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{company} {getRounds()[currentRoundIndex]}</h3>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{role} • Preparation</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                           <div className="inline-block px-4 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-[9px] font-black uppercase tracking-[0.2em]">Strategy Finalized</div>
-                        </div>
-                    </div>
-
-                    <header className="text-center space-y-4">
-                        <h2 className="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Pick Your Focus Area</h2>
-                        <p className="text-gray-500 font-bold text-sm">Select a topic to start practicing specific questions</p>
-                    </header>
-
-                    <div className="bg-white dark:bg-gray-800 p-12 rounded-[4rem] border border-gray-100 dark:border-gray-700 shadow-2xl space-y-10">
-                        <div className="flex flex-wrap gap-4 justify-center">
-                            {["All topics", ...roundTopics].map(topic => (
-                                <button
-                                    key={topic}
-                                    onClick={() => setSelectedTopic(topic)}
-                                    className={`px-8 py-4 rounded-3xl text-sm font-black uppercase tracking-wider transition-all border-2 ${
-                                        selectedTopic === topic 
-                                        ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-500/30 scale-105' 
-                                        : 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 text-gray-500 hover:border-blue-400'
-                                    }`}
-                                >
-                                    {topic}
-                                </button>
-                            ))}
-                        </div>
-                        
-                        <div className="pt-8 border-t border-gray-100 dark:border-gray-800">
-                            <button 
-                                onClick={() => startPractice(selectedTopic)}
-                                className="w-full py-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl hover:shadow-2xl transition-all"
-                            >
-                                Start Training Session
-                            </button>
-                        </div>
-                    </div>
+            <div className="bg-white dark:bg-gray-800 p-12 rounded-[3.5rem] border border-gray-100 dark:border-gray-700 shadow-xl space-y-8">
+                <div className="space-y-4">
+                    <label className="text-xs font-black uppercase tracking-[0.2em] text-gray-500">Target Profile / Role</label>
+                    <input
+                        type="text"
+                        value={mockConfig.role}
+                        onChange={(e) => setMockConfig(prev => ({ ...prev, role: e.target.value }))}
+                        placeholder="e.g. Software Developer, AI Engineer..."
+                        className="w-full p-6 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl text-sm font-bold text-gray-900 dark:text-white outline-none focus:border-indigo-500 transition-all"
+                    />
                 </div>
-            )}
 
-            {stage === 'selection' && (
-                <div className="max-w-4xl mx-auto w-full space-y-8 animate-slide-up">
-                    <header className="text-center">
-                        <div className="max-w-6xl mx-auto w-full space-y-12 pb-20">
-                            <div className="text-center space-y-6 py-12">
-                                <div className="inline-block p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-full animate-bounce-slow">
-                                    <span className="text-4xl text-indigo-600">🎯</span>
-                                </div>
-                                <h2 className="text-5xl font-black text-gray-900 dark:text-white tracking-tight uppercase">Interview Preparation</h2>
-                                <p className="text-xl text-gray-500 font-medium max-w-2xl mx-auto">Master your next interview with role-specific questions and expert feedback.</p>
-                            </div>
-                        </div>
-                    </header>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-                        <div className="p-8 bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700">
-                            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-6">Step 1: Target Role</h3>
-                            <div className="space-y-4">
-                                {role === 'Other' ? (
-                                    <input
-                                        type="text"
-                                        value={customRole}
-                                        onChange={(e) => setCustomRole(e.target.value)}
-                                        placeholder="Type your role (e.g. ASIC Designer)"
-                                        className="w-full p-4 bg-blue-50/50 dark:bg-blue-900/10 border-2 border-blue-500 rounded-2xl text-sm font-black text-gray-900 dark:text-gray-100 outline-none transition-all"
-                                    />
-                                ) : (
-                                    <div className="flex flex-wrap gap-2">
-                                        {['Data Scientist', 'AI Engineer', 'Software Developer', 'Frontend Developer', 'Backend Developer', 'Full Stack Developer', 'Machine Learning Engineer', 'Product Manager'].map((r) => (
-                                            <button key={r} onClick={() => setRole(r)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all ${role === r ? 'bg-blue-600 border-blue-600 text-white shadow-lg' : 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 text-gray-500 hover:border-blue-400'}`}>
-                                                {r}
-                                            </button>
-                                        ))}
-                                        <button onClick={() => setRole('Other')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border transition-all ${role === 'Other' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 text-gray-500 hover:border-blue-400'}`}>Other</button>
-                                    </div>
-                                )}
-                                {role === 'Other' && <button onClick={() => setRole('')} className="text-[10px] font-black text-gray-400 uppercase">← Select from list</button>}
-                            </div>
-                        </div>
-
-                        <div className="p-8 bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700">
-                            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 mb-6">Step 2: Target Company</h3>
-                            <div className="space-y-3">
-                                {company === 'Other' ? (
-                                    <div className="space-y-3">
-                                        <input
-                                            type="text"
-                                            value={customCompany}
-                                            onChange={(e) => setCustomCompany(e.target.value)}
-                                            placeholder="Type company (e.g. Accenture)"
-                                            className="w-full p-4 bg-indigo-50/50 dark:bg-indigo-900/10 border-2 border-indigo-500 rounded-2xl text-sm font-black text-gray-900 dark:text-gray-100 outline-none transition-all"
-                                        />
-                                        <button 
-                                            onClick={handlePredictRounds}
-                                            disabled={isPredictingRounds || !customCompany}
-                                            className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
-                                        >
-                                            {isPredictingRounds ? 'Detecting Rounds...' : 'Detect Process'}
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {['Google', 'Amazon', 'Microsoft', 'TCS', 'Infosys', 'Generic'].map((c) => (
-                                            <button key={c} onClick={() => setCompany(c)} className={`p-3 rounded-xl text-center text-[10px] font-black uppercase transition-all border ${company === c ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' : 'bg-gray-50/50 dark:bg-gray-900/50 border-gray-100 dark:border-gray-700 text-gray-500 hover:border-indigo-300'}`}>
-                                                {c}
-                                            </button>
-                                        ))}
-                                        <button onClick={() => setCompany('Other')} className={`p-3 rounded-xl text-center text-[10px] font-black uppercase transition-all border ${company === 'Other' ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-500 hover:border-indigo-300'}`}>Other</button>
-                                    </div>
-                                )}
-                                {company === 'Other' && <button onClick={() => setCompany('Generic')} className="text-[10px] font-black text-gray-400 uppercase">← Select from list</button>}
-                            </div>
-                        </div>
-
-                        <div className="p-8 bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-700">
-                            <div className="flex justify-between items-start mb-6">
-                                <div>
-                                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400">
-                                        {company ? `Step 3: ${company} rounds` : "Step 3: Select a company first"}
-                                        {predictedRounds.length > 0 && <span className="ml-2 text-emerald-500 lowercase font-bold tracking-normal italic">(AI Generated)</span>}
-                                    </h3>
-                                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-2">Select the round you want to practise</p>
-                                </div>
-                                {company && (
-                                    <div className="flex flex-col items-end gap-2">
-                                        <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-[9px] font-black uppercase">
-                                            {getRounds().length} Rounds
-                                        </span>
-                                        {predictedRounds.length > 0 && (
-                                            <button 
-                                                onClick={() => { setPredictedRounds([]); setSelectedRound(null); }}
-                                                className="text-[8px] font-black text-rose-500 uppercase hover:underline"
-                                            >
-                                                Reset to Default
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="space-y-3 mb-8">
-                                {(predictedRounds.length > 0 ? mapPredictedToRoundObjects(predictedRounds) : (COMPANY_ROUNDS[company.toLowerCase()] || COMPANY_ROUNDS.other).rounds).map((r, idx) => (
-                                    <button
-                                        key={r.id}
-                                        onClick={() => { setSelectedRound(r); setPractiseAllRounds(false); setCurrentRoundIndex(idx); }}
-                                        className={`w-full p-4 rounded-2xl text-left transition-all border flex items-center gap-4 ${
-                                            selectedRound?.id === r.id 
-                                            ? 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-500 ring-1 ring-blue-500' 
-                                            : 'bg-gray-50/50 dark:bg-gray-900/50 border-gray-100 dark:border-gray-700 hover:border-blue-300'
-                                        }`}
-                                    >
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs shrink-0 ${
-                                            selectedRound?.id === r.id ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-800 text-gray-500'
-                                        }`}>
-                                            {r.num}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-sm font-black text-gray-900 dark:text-white leading-none mb-2">{r.name}</div>
-                                            <div className="text-[11px] font-bold text-gray-500 leading-relaxed whitespace-normal">{r.desc}</div>
-                                        </div>
-                                        <div className={`px-2 py-1 rounded text-[8px] font-black uppercase ${
-                                            r.difficulty === 'Hard' ? 'bg-rose-100 text-rose-600' : 
-                                            r.difficulty === 'Medium' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
-                                        }`}>
-                                            {r.difficulty}
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4 mb-8">
-                                <button 
-                                    onClick={() => { setPractiseAllRounds(true); setSelectedRound(null); setCurrentRoundIndex(0); }}
-                                    className={`p-4 rounded-2xl border text-[9px] font-black uppercase tracking-[0.15em] transition-all ${practiseAllRounds ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-500/30' : 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-500 hover:border-blue-400'}`}
-                                >
-                                    Practise all rounds in sequence
-                                </button>
-                                <button 
-                                    onClick={() => { 
-                                        setPractiseAllRounds(false); 
-                                        const rds = (predictedRounds.length > 0 ? mapPredictedToRoundObjects(predictedRounds) : (COMPANY_ROUNDS[company.toLowerCase()] || COMPANY_ROUNDS.other).rounds);
-                                        const techIdx = rds.findIndex(round => round.type === 'technical');
-                                        if (techIdx !== -1) {
-                                            setSelectedRound(rds[techIdx]);
-                                            setCurrentRoundIndex(techIdx);
-                                        }
-                                    }}
-                                    className="p-4 rounded-2xl border bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-700 text-gray-500 hover:border-blue-400 text-[9px] font-black uppercase tracking-[0.15em]"
-                                >
-                                    Start from my weakest area
-                                </button>
-                            </div>
-
-                            {(COMPANY_ROUNDS[company.toLowerCase()]?.tip || predictedRounds.length > 0) && (
-                                <div className="p-6 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-3xl mb-8">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <span className="text-xl">💡</span>
-                                        <h4 className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Company Strategy Tip</h4>
-                                    </div>
-                                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium leading-relaxed italic">
-                                        {predictedRounds.length > 0 
-                                            ? `Focusing on ${role} specific challenges as predicted by AI based on latest industry trends.`
-                                            : COMPANY_ROUNDS[company.toLowerCase()]?.tip
-                                        }
-                                    </p>
-                                </div>
-                            )}
-
+                <div className="space-y-4">
+                    <label className="text-xs font-black uppercase tracking-[0.2em] text-gray-500">Difficulty Level</label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {['Mixed', 'Basic', 'Intermediate', 'Advanced'].map(diff => (
                             <button
-                                onClick={() => handleGenerate(currentRoundIndex)}
-                                disabled={isGenerating || !role}
-                                className={`w-full py-6 rounded-3xl font-black uppercase tracking-[0.2em] text-xs transition-all shadow-xl ${isGenerating || !role ? 'bg-gray-100 dark:bg-gray-800 text-gray-400' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/25'}`}
+                                key={diff}
+                                onClick={() => setMockConfig(prev => ({ ...prev, difficulty: diff }))}
+                                className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-wider border-2 transition-all ${mockConfig.difficulty === diff ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-transparent border-gray-100 dark:border-gray-800 text-gray-500 hover:border-indigo-400'}`}
                             >
-                                {isGenerating ? 'Configuring Interview Rounds...' : `Start ${company} Interview Simulation`}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {stage === 'questions' && !isMCQMode && (
-                <div className="max-w-6xl mx-auto w-full space-y-8 animate-slide-up pb-20">
-                    <div className="flex bg-white dark:bg-gray-800 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 w-fit mx-auto sticky top-4 z-40">
-                        {['practice', 'study', 'teach', 'progress', 'doubt'].map((tab) => (
-                            <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                                    activeTab === tab 
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' 
-                                    : 'text-gray-400 hover:text-blue-600'
-                                }`}
-                            >
-                                {tab === 'teach' ? 'Teach Me' : tab}
+                                {diff}
                             </button>
                         ))}
                     </div>
-
-                    {activeTab === 'practice' && (
-                        <div className="space-y-8">
-                            <header className="flex justify-between items-end">
-                                <div className="space-y-1">
-                                    <h3 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{company} Interview</h3>
-                                    <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Round {currentRoundIndex + 1}: {getRounds()[currentRoundIndex]} • {selectedTopic}</p>
-                                </div>
-                                <div className="flex gap-3">
-                                    <button onClick={() => setStage('topics')} className="px-6 py-3 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-500 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all">
-                                        Back to Topics
-                                    </button>
-                                    <button onClick={() => startPractice(selectedTopic)} disabled={isGenerating} className="px-6 py-3 bg-white dark:bg-gray-800 border-2 border-blue-100 dark:border-blue-900 text-blue-600 dark:text-blue-400 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all hover:border-blue-500 shadow-sm">
-                                        {isGenerating ? 'Loading...' : 'Refresh Questions'}
-                                    </button>
-                                    <button onClick={handleStudyRound} className="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-500/20">
-                                        {currentRoundIndex < getRounds().length - 1 ? 'Next Round' : 'Finish & View Report'}
-                                    </button>
-                                </div>
-                            </header>
-
-                            <div className="space-y-6">
-                                {questions.map((q, idx) => (
-                                    <div key={idx} className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden group">
-                                        <div className="p-1 w-full bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-50 px-8 py-4 flex items-center justify-between">
-                                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Question {idx + 1}</span>
-                                            <button onClick={() => { setActiveTab('doubt'); setActiveDoubtQuestion(q); setDoubtResponse(null); setDoubtQuery(''); }} className="text-[10px] font-black text-gray-400 hover:text-blue-600 uppercase tracking-widest transition-colors flex items-center gap-1">
-                                                <span>Ask a Doubt</span>
-                                            </button>
-                                        </div>
-                                        <div className="p-8 space-y-6">
-                                            <h4 className="text-xl font-bold text-gray-900 dark:text-white leading-relaxed">{q.question}</h4>
-                                            
-                                            {!q.isSubmitted ? (
-                                                <div className="space-y-4">
-                                                    <div className="relative">
-                                                        <textarea 
-                                                            className="w-full p-6 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 pb-14"
-                                                            placeholder="Type or dictate your answer here..."
-                                                            rows={4}
-                                                            value={q.userAnswer || ''}
-                                                            onChange={(e) => {
-                                                                const newQs = [...questions];
-                                                                newQs[idx].userAnswer = e.target.value;
-                                                                setQuestions(newQs);
-                                                            }}
-                                                        />
-                                                        <button 
-                                                            onClick={() => toggleListening(idx)}
-                                                            className={`absolute bottom-4 right-4 p-3 rounded-xl transition-all shadow-md ${listeningIdx === idx ? 'bg-red-500 text-white animate-pulse' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-blue-600 hover:border-blue-300'}`}
-                                                            title={listeningIdx === idx ? "Stop Dictation" : "Start Dictation"}
-                                                        >
-                                                            {listeningIdx === idx ? '🛑 Recording...' : '🎤 Dictate Answer'}
-                                                        </button>
-                                                    </div>
-                                                    <button 
-                                                        onClick={async () => {
-                                                            const newQs = [...questions];
-                                                            newQs[idx].isSubmitting = true;
-                                                            setQuestions(newQs);
-                                                            
-                                                            try {
-                                                                const res = await interviewAPI.analyzeAnswer(role, q.question, q.userAnswer || '');
-                                                                const updatedQs = [...questions];
-                                                                updatedQs[idx].feedback = res.data;
-                                                                updatedQs[idx].isSubmitted = true;
-                                                                updatedQs[idx].isSubmitting = false;
-                                                                setQuestions(updatedQs);
-
-                                                                // Progress Tracking
-                                                                const score = res.data.scores?.overall || 0;
-                                                                if (score >= 60) setSessionStreak(s => s + 1);
-                                                                else setSessionStreak(0);
-                                                                
-                                                                setTopicPerformance(prev => {
-                                                                    const t = q.topic || selectedTopic || 'General';
-                                                                    return {
-                                                                        ...prev,
-                                                                        [t]: {
-                                                                            attempted: (prev[t]?.attempted || 0) + 1,
-                                                                            correct: (prev[t]?.correct || 0) + (score >= 60 ? 1 : 0)
-                                                                        }
-                                                                    };
-                                                                });
-                                                            } catch (e) {
-                                                                console.error("Analysis failed", e);
-                                                            }
-                                                        }}
-                                                        disabled={!q.userAnswer?.trim() || q.isSubmitting}
-                                                        className="px-8 py-3 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50"
-                                                    >
-                                                        {q.isSubmitting ? 'Evaluating...' : 'Submit Answer'}
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-6 animate-fade-in">
-                                                    <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl">
-                                                        <h5 className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase mb-2">Interviewer Feedback • {q.feedback?.scores?.overall}%</h5>
-                                                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200">"{q.feedback?.interviewer_reaction}"</p>
-                                                    </div>
-                                                    
-                                                    <div className="p-6 bg-blue-50/30 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl">
-                                                        <h5 className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-3">Expert Model Answer</h5>
-                                                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium italic">"{q.suggested_answer}"</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            
-                            <div className="flex justify-center pt-4">
-                                <button 
-                                    onClick={loadMoreQuestions} 
-                                    disabled={isGeneratingMore}
-                                    className="px-8 py-4 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-800 text-blue-600 dark:text-blue-400 font-black rounded-2xl uppercase tracking-[0.2em] text-[10px] transition-all border border-blue-100 dark:border-blue-900/30 w-full max-w-sm"
-                                >
-                                    {isGeneratingMore ? 'Loading Additional Questions...' : 'Load 10 More Questions'}
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'study' && (
-                        <div className="space-y-8">
-                            <header className="flex justify-between items-end">
-                                <div className="space-y-2">
-                                    <h3 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Top Q&A Study Material</h3>
-                                    <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Review expert answers to master {selectedTopic}</p>
-                                </div>
-                                <button 
-                                    onClick={generateStudyMaterial} 
-                                    disabled={isGeneratingStudy}
-                                    className="px-6 py-3 bg-white dark:bg-gray-800 border-2 border-blue-100 dark:border-blue-900 text-blue-600 dark:text-blue-400 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all hover:border-blue-500 shadow-sm"
-                                >
-                                    {isGeneratingStudy ? 'Loading Q&As...' : (studyQAs.length === 0 ? 'Generate Study Material' : 'Refresh Q&As')}
-                                </button>
-                            </header>
-
-                            {studyQAs.length === 0 && !isGeneratingStudy && (
-                                <div className="p-12 text-center bg-gray-50/50 dark:bg-gray-900/50 border border-dashed border-gray-200 dark:border-gray-800 rounded-[2.5rem]">
-                                    <span className="text-4xl block mb-4">📚</span>
-                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Ready to Study?</h4>
-                                    <p className="text-gray-500 text-sm">Click the button above to generate top interview questions and their expert answers for this topic.</p>
-                                </div>
-                            )}
-
-                            <div className="space-y-6">
-                                {studyQAs.map((qa, idx) => (
-                                    <div key={idx} className="bg-white dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden group p-8 space-y-6">
-                                        <div className="flex gap-4">
-                                            <span className="w-8 h-8 shrink-0 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-black text-xs">Q{idx + 1}</span>
-                                            <h4 className="text-lg font-bold text-gray-900 dark:text-white leading-relaxed pt-1">{qa.question}</h4>
-                                        </div>
-                                        <div className="pl-12 space-y-4">
-                                            <div className="p-5 bg-blue-50/30 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl">
-                                                <h5 className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-3">Expert Model Answer</h5>
-                                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed font-medium italic">"{qa.suggested_answer}"</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            
-                            {studyQAs.length > 0 && (
-                                <div className="flex justify-center pt-4">
-                                    <button 
-                                        onClick={loadMoreStudyQuestions} 
-                                        disabled={isGeneratingStudy}
-                                        className="px-8 py-4 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-800 text-blue-600 dark:text-blue-400 font-black rounded-2xl uppercase tracking-[0.2em] text-[10px] transition-all border border-blue-100 dark:border-blue-900/30 w-full max-w-sm"
-                                    >
-                                        {isGeneratingStudy ? 'Loading Additional Q&As...' : 'Load 10 More Questions'}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {activeTab === 'teach' && (
-                        <div className="space-y-10">
-                            <header className="text-center space-y-2">
-                                <h3 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Learn before you practise</h3>
-                                <p className="text-gray-500 font-bold text-xs uppercase tracking-widest">Master each topic the way {company} tests it</p>
-                            </header>
-
-                            <div className="grid grid-cols-1 gap-6">
-                                {roundTopics.map((topic, idx) => {
-                                    const lesson = teachMeCache[topic];
-                                    return (
-                                        <div key={idx} className="bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden">
-                                            <div className="flex items-center justify-between p-8 bg-gray-50/30 dark:bg-gray-900/10">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-xl">L</div>
-                                                    <div>
-                                                        <h4 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">{topic}</h4>
-                                                        <span className="px-2 py-0.5 bg-blue-100 text-blue-600 rounded text-[9px] font-black uppercase">{getRounds()[currentRoundIndex]}</span>
-                                                    </div>
-                                                </div>
-                                                <button 
-                                                    onClick={async () => {
-                                                        if (lesson) return;
-                                                        setTeachMeCache({ ...teachMeCache, [topic]: { loading: true } });
-                                                        try {
-                                                            const res = await interviewAPI.teachTopic(company, role, getRounds()[currentRoundIndex], topic);
-                                                            setTeachMeCache(prev => ({ ...prev, [topic]: res.data }));
-                                                        } catch (e) {
-                                                            setTeachMeCache(prev => ({ ...prev, [topic]: { error: true } }));
-                                                        }
-                                                    }}
-                                                    className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                                                        lesson ? 'bg-gray-100 text-gray-400 cursor-default' : 'bg-blue-600 text-white hover:bg-blue-700'
-                                                    }`}
-                                                >
-                                                    {lesson?.loading ? 'Preparing lesson...' : lesson ? 'Topic Learned' : 'Learn this topic'}
-                                                </button>
-                                            </div>
-
-                                            {lesson && !lesson.loading && !lesson.error && (
-                                                <div className="p-10 space-y-10 animate-fade-in border-t border-gray-50 dark:border-gray-700">
-                                                    <div className="space-y-4">
-                                                        <p className="text-lg font-medium text-gray-700 dark:text-gray-300 leading-relaxed">{lesson.what_it_is}</p>
-                                                        <div className="p-6 bg-amber-50/50 border border-amber-100 rounded-2xl">
-                                                            <h5 className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">Why {company} values this</h5>
-                                                            <p className="text-sm text-gray-800 font-bold">{lesson.why_it_matters_at_company}</p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-                                                        {lesson.core_concepts?.map((c, i) => (
-                                                            <div key={i} className="p-6 bg-gray-50/50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-3">
-                                                                <h6 className="text-sm font-black text-blue-600 uppercase">{c.concept}</h6>
-                                                                <p className="text-xs text-gray-600 leading-normal">{c.explanation}</p>
-                                                                <p className="text-xs font-bold text-gray-400 italic">Example: {c.example}</p>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                                        <div className="space-y-4">
-                                                            <h5 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Shortcuts & Patterns</h5>
-                                                            <ul className="space-y-2">
-                                                                {lesson.patterns_and_tricks?.map((t, i) => <li key={i} className="text-xs font-bold flex gap-3 text-gray-700"><span className="text-emerald-500">⚡</span> {t}</li>)}
-                                                            </ul>
-                                                        </div>
-                                                        <div className="space-y-4">
-                                                            <h5 className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Watch out for</h5>
-                                                            <ul className="space-y-2">
-                                                                {lesson.common_mistakes?.map((m, i) => <li key={i} className="text-xs font-bold flex gap-3 text-gray-700"><span className="text-rose-500">⚠</span> {m}</li>)}
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="p-8 bg-gray-900 rounded-[2rem] text-left">
-                                                        <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Example question at {company}</h5>
-                                                        <p className="text-lg font-black text-white italic">"{lesson.sample_question}"</p>
-                                                    </div>
-
-                                                    <div className="flex flex-col items-center gap-6 pt-6">
-                                                        <div className="text-center px-10 py-6 border-2 border-dashed border-gray-100 rounded-3xl">
-                                                            <p className="text-xl font-serif italic text-gray-600">"{lesson.one_liner_to_remember}"</p>
-                                                        </div>
-                                                        <button 
-                                                            onClick={() => { setSelectedTopic(topic); setActiveTab('practice'); }}
-                                                            className="px-12 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] hover:bg-blue-600 transition-all shadow-xl"
-                                                        >
-                                                            Practise this topic now
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'progress' && (
-                        <div className="space-y-12 animate-fade-in">
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                                {[
-                                    { label: "Questions Answered", val: questions.length + (isMCQMode ? mcqResults.length : 0), icon: "📝" },
-                                    { label: "Overall Accuracy", val: `${Math.round((mcqResults.filter(r => r.correct).length / (mcqResults.length || 1)) * 100)}%`, icon: "🎯" },
-                                    { label: "Current Streak", val: `🔥 ${sessionStreak}`, icon: "⚡" },
-                                    { label: "Rounds Finished", val: allRoundResults.length, icon: "🏁" }
-                                ].map((m, i) => (
-                                    <div key={i} className="p-8 bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-sm text-center space-y-2">
-                                        <span className="text-3xl block">{m.icon}</span>
-                                        <span className="text-2xl font-black text-gray-900 dark:text-white">{m.val}</span>
-                                        <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{m.label}</h5>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="p-10 bg-white dark:bg-gray-800 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-xl space-y-10">
-                                <h4 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Your strengths & gaps</h4>
-                                <div className="space-y-6">
-                                    {Object.entries(getRunningAverages()).map(([dim, score]) => (
-                                        <div key={dim} className="space-y-2">
-                                            <div className="flex justify-between items-end">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{dim.replace('_', ' ')}</span>
-                                                <span className="text-sm font-black text-gray-900 dark:text-white">{score}%</span>
-                                            </div>
-                                            <div className="h-4 bg-gray-50 dark:bg-gray-900 rounded-full overflow-hidden border border-gray-100 dark:border-gray-800">
-                                                <div 
-                                                    className={`h-full transition-all duration-1000 ${score >= 70 ? 'bg-emerald-500 shadow-[0_0_15px_-3px_rgba(16,185,129,0.5)]' : score >= 40 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                                                    style={{ width: `${score}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {Object.keys(topicPerformance).length > 1 && (
-                                <div className="p-10 bg-white dark:bg-gray-800 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-xl space-y-8">
-                                    <h4 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight text-left">Topic breakdown</h4>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left">
-                                            <thead>
-                                                <tr className="border-b border-gray-50 dark:border-gray-700">
-                                                    <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Topic</th>
-                                                    <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Questions</th>
-                                                    <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Accuracy</th>
-                                                    <th className="py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                                                {Object.entries(topicPerformance)
-                                                    .sort((a, b) => (a[1].correct / a[1].attempted) - (b[1].correct / b[1].attempted))
-                                                    .map(([topic, stats]) => (
-                                                        <tr key={topic}>
-                                                            <td className="py-5 font-bold text-sm">{topic}</td>
-                                                            <td className="py-5 text-center font-black text-gray-400 text-xs">{stats.attempted}</td>
-                                                            <td className="py-5 text-center">
-                                                                <span className={`px-4 py-1.5 rounded-full text-[10px] font-black ${
-                                                                    (stats.correct / stats.attempted) >= 0.7 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-                                                                }`}>
-                                                                    {Math.round((stats.correct / stats.attempted) * 100)}%
-                                                                </span>
-                                                            </td>
-                                                            <td className="py-5 text-right">
-                                                                <button 
-                                                                    onClick={() => handleDrill(topic)}
-                                                                    className="px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase hover:bg-blue-600 hover:text-white transition-all"
-                                                                >
-                                                                    Drill Topic
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
-
-                            {allRoundResults.length > 0 && (
-                                <div className="p-10 bg-white dark:bg-gray-800 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-xl space-y-6">
-                                    <h4 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tight text-left">Round history</h4>
-                                    <div className="space-y-4">
-                                        {allRoundResults.map((r, i) => (
-                                            <div key={i} className="flex items-center justify-between p-6 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-100 rounded-[2rem]">
-                                                <div>
-                                                    <h5 className="font-black text-gray-900 dark:text-white">{r.round}</h5>
-                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Score: {r.score}%</p>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <div className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[8px] font-black uppercase">Strong: Depth</div>
-                                                    <div className="px-3 py-1 bg-rose-100 text-rose-700 rounded-lg text-[8px] font-black uppercase">Weak: Edge Cases</div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {activeTab === 'doubt' && (
-                        <div className="max-w-4xl mx-auto w-full space-y-10 animate-fade-in">
-                            <header className="text-center space-y-2">
-                                <h3 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Ask Doubt</h3>
-                                <p className="text-gray-500 font-bold text-xs uppercase tracking-widest italic">Clarify your queries with our expert mentor</p>
-                            </header>
-
-                            <div className="bg-white dark:bg-gray-800 p-10 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-xl space-y-10">
-                                {activeDoubtQuestion ? (
-                                    <div className="space-y-8">
-                                        <div className="p-8 bg-gray-50/50 dark:bg-gray-900 border-l-8 border-blue-600 rounded-3xl">
-                                            <h5 className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-2">Context Question</h5>
-                                            <p className="text-lg font-bold text-gray-900 dark:text-white leading-relaxed">{activeDoubtQuestion.question}</p>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <textarea
-                                                value={doubtQuery}
-                                                onChange={(e) => setDoubtQuery(e.target.value)}
-                                                placeholder="What specifics would you like to understand about this topic or answer?"
-                                                rows={5}
-                                                className="w-full p-8 bg-gray-50/50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-800 rounded-[2.5rem] outline-none focus:ring-4 focus:ring-blue-100 transition-all font-medium text-gray-900 dark:text-white"
-                                            />
-                                            <button 
-                                                onClick={() => handleAskDoubt(activeDoubtQuestion)}
-                                                disabled={isClarifying || !doubtQuery.trim()}
-                                                className="w-full py-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] text-xs shadow-xl disabled:opacity-50"
-                                            >
-                                                {isClarifying ? 'Consulting Expert...' : 'Send Query to Mentor'}
-                                            </button>
-                                        </div>
-
-                                        {doubtResponse && (
-                                            <div className="p-10 bg-emerald-50/30 dark:bg-emerald-900/10 border-2 border-emerald-100 dark:border-emerald-900/30 rounded-[3rem] animate-slide-up">
-                                                <h5 className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-6">Expert Response</h5>
-                                                <p className="text-lg font-medium text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">{doubtResponse.answer}</p>
-                                                {doubtResponse.suggestions?.length > 0 && (
-                                                    <div className="mt-8 pt-6 border-t border-emerald-100 space-y-3 text-left">
-                                                        <h6 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Recommended Readings</h6>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {doubtResponse.suggestions.map((s, i) => <span key={i} className="px-4 py-2 bg-white rounded-xl text-xs font-bold text-emerald-700 shadow-sm"># {s}</span>)}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="py-20 flex flex-col items-center gap-6 opacity-40">
-                                        <span className="text-6xl">💬</span>
-                                        <p className="text-sm font-black uppercase tracking-widest text-center">Select any question from the practice tab<br/>to ask a doubt about it.</p>
-                                        <button onClick={() => setActiveTab('practice')} className="text-blue-600 font-black text-xs uppercase border-b-2 border-blue-600">Go to Practice</button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
                 </div>
-            )}
 
-            {stage === 'questions' && isMCQMode && (
-                <div className="max-w-5xl mx-auto w-full space-y-8 animate-slide-up pb-20">
-                    <header className="flex justify-between items-end">
-                        <div className="space-y-1">
-                            <h3 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{company} {getRounds()[currentRoundIndex]}</h3>
-                            <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Step {currentRoundIndex + 1}: Assessment Round</p>
-                        </div>
-                        <div className="text-right">
-                            <span className="text-xs font-black text-blue-600 uppercase tracking-widest">Questions Remaining: {questions.length - mcqResults.length}</span>
-                        </div>
-                    </header>
-
-                    <div className="space-y-8">
-                        {questions.map((q, idx) => {
-                            const result = mcqResults.find(r => r.questionId === q.id);
-                            return (
-                                <div key={q.id || idx} className="bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-xl overflow-hidden">
-                                    <div className="px-10 py-6 bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-50 flex items-center gap-4">
-                                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-[9px] font-black uppercase tracking-widest">Question {idx + 1}</span>
-                                        <span className="text-[10px] font-black text-gray-400 border-l border-gray-200 pl-4 uppercase tracking-[0.2em]">{q.topic || 'General Aptitude'}</span>
-                                    </div>
-                                    <div className="p-10 space-y-8">
-                                        <h4 className="text-2xl font-bold text-gray-900 dark:text-white leading-relaxed">{q.question}</h4>
-                                        
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {Object.entries(q.options || {}).map(([key, text]) => {
-                                                const isSelected = result?.userOption === key;
-                                                const isCorrect = q.correct_option === key;
-                                                let buttonClass = "bg-gray-50/50 dark:bg-gray-900/50 border-gray-100 dark:border-gray-800 text-gray-700 hover:border-blue-400";
-                                                
-                                                if (result) {
-                                                    if (isCorrect) buttonClass = "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20";
-                                                    else if (isSelected) buttonClass = "bg-rose-500 border-rose-500 text-white shadow-lg shadow-rose-500/20";
-                                                    else buttonClass = "opacity-40 grayscale pointer-events-none bg-gray-50 dark:bg-gray-900 border-gray-100";
-                                                }
-
-                                                return (
-                                                    <button 
-                                                        key={key}
-                                                        disabled={!!result}
-                                                        onClick={() => {
-                                                            const isRight = key === q.correct_option;
-                                                            setMcqResults([...mcqResults, { questionId: q.id, userOption: key, correct: isRight, topic: q.topic }]);
-                                                            if (isRight) {
-                                                                setSessionStreak(s => s + 1);
-                                                                setTopicPerformance(prev => ({
-                                                                    ...prev,
-                                                                    [q.topic || 'General']: { 
-                                                                        attempted: (prev[q.topic || 'General']?.attempted || 0) + 1,
-                                                                        correct: (prev[q.topic || 'General']?.correct || 0) + 1
-                                                                    }
-                                                                }));
-                                                            } else {
-                                                                setSessionStreak(0);
-                                                                setTopicPerformance(prev => ({
-                                                                    ...prev,
-                                                                    [q.topic || 'General']: { 
-                                                                        attempted: (prev[q.topic || 'General']?.attempted || 0) + 1,
-                                                                        correct: (prev[q.topic || 'General']?.correct || 0)
-                                                                    }
-                                                                }));
-                                                            }
-                                                        }}
-                                                        className={`p-6 rounded-2xl border-2 text-left transition-all duration-300 flex items-center gap-4 ${buttonClass}`}
-                                                    >
-                                                        <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm ${result ? 'bg-white/20' : 'bg-white dark:bg-gray-800 shadow-sm'}`}>{key}</span>
-                                                        <span className="font-bold text-sm">{text}</span>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-
-                                        {result && (
-                                            <div className="animate-fade-in space-y-6">
-                                                <div className={`p-6 rounded-[2rem] border ${result.correct ? 'bg-emerald-50 border-emerald-100' : 'bg-rose-50 border-rose-100'}`}>
-                                                    <h5 className={`text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${result.correct ? 'text-emerald-600' : 'text-rose-600'}`}>{result.correct ? '✓ Correct!' : '✕ Incorrect'}</h5>
-                                                    <p className="text-sm font-medium text-gray-700 leading-relaxed">{q.explanation}</p>
-                                                </div>
-                                                <div className="p-6 bg-amber-50 border border-amber-100 rounded-[2rem]">
-                                                    <h5 className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] mb-3">Quick Shortcut Trick</h5>
-                                                    <p className="text-sm font-bold text-gray-900 leading-relaxed italic">{q.shortcut_trick || "Identify the pattern quickly to save time."}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
+                <div className="space-y-4">
+                    <label className="text-xs font-black uppercase tracking-[0.2em] text-gray-500">Duration (Minutes)</label>
+                    <div className="flex items-center gap-4">
+                        {[5, 10, 15, 30].map(dur => (
+                            <button
+                                key={dur}
+                                onClick={() => setMockConfig(prev => ({ ...prev, duration: dur }))}
+                                className={`w-16 h-16 rounded-full flex items-center justify-center text-sm font-black transition-all ${mockConfig.duration === dur ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500'}`}
+                            >
+                                {dur}m
+                            </button>
+                        ))}
                     </div>
-                    
-                    <div className="flex justify-center pb-24 pt-4">
-                        <button 
-                            onClick={loadMoreQuestions} 
-                            disabled={isGeneratingMore}
-                            className="px-8 py-4 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-800 text-blue-600 dark:text-blue-400 font-black rounded-2xl uppercase tracking-[0.2em] text-[10px] transition-all border border-blue-100 dark:border-blue-900/30 w-full max-w-sm"
+                </div>
+
+                <div className="pt-8 space-y-4">
+                    {/* ── Feature selector ─────────────────────────── */}
+                    <div className="grid grid-cols-2 gap-4">
+                        {/* Live Interview CTA */}
+                        <button
+                            onClick={startLiveInterview}
+                            disabled={!mockConfig.role}
+                            className={`group relative overflow-hidden flex flex-col items-center gap-3 py-7 rounded-[1.8rem] font-black transition-all border-2 ${
+                                !mockConfig.role
+                                    ? 'border-gray-100 dark:border-gray-800 text-gray-300 cursor-not-allowed bg-transparent'
+                                    : 'border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700 hover:border-indigo-700 shadow-2xl shadow-indigo-500/30'
+                            }`}
                         >
-                            {isGeneratingMore ? 'Loading Additional Questions...' : 'Load 10 More Questions'}
+                            <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full group-hover:scale-150 transition-transform duration-500" />
+                            <span className="text-2xl">🎥</span>
+                            <div className="text-center relative z-10">
+                                <p className="text-xs uppercase tracking-[0.2em]">Live Interview</p>
+                                <p className="text-[9px] font-medium opacity-70 mt-1 uppercase tracking-widest">Webcam · Voice · Adaptive AI</p>
+                            </div>
+                        </button>
+
+                        {/* Classic Mode CTA */}
+                        <button
+                            onClick={startMockInterview}
+                            disabled={!mockConfig.role || isGeneratingMock}
+                            className={`flex flex-col items-center gap-3 py-7 rounded-[1.8rem] text-xs font-black uppercase tracking-wider border-2 transition-all ${
+                                !mockConfig.role || isGeneratingMock
+                                    ? 'border-gray-200 dark:border-gray-700 text-gray-300 cursor-not-allowed bg-transparent'
+                                    : 'border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-indigo-400 hover:text-indigo-600 bg-transparent'
+                            }`}
+                        >
+                            <span className="text-2xl">📝</span>
+                            <div className="text-center">
+                                <p className="text-xs uppercase tracking-[0.2em]">Classic Mode</p>
+                                <p className="text-[9px] font-medium opacity-70 mt-1 uppercase tracking-widest">{isGeneratingMock ? 'Initializing...' : 'Text-based · Pre-loaded'}</p>
+                            </div>
                         </button>
                     </div>
-                    
-                    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md border border-white/20 px-8 py-4 rounded-full shadow-2xl flex items-center gap-10">
-                        <div className="flex flex-col">
-                            <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest text-center">Current Streak</span>
-                            <span className="text-2xl font-black text-white text-center">🔥 {sessionStreak}</span>
+
+                    <p className="text-center text-[10px] text-gray-400 font-medium">
+                        🔥 <strong>Live Interview</strong> simulates a real interview with webcam, adaptive AI questions and voice read-aloud
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderMockSession = () => {
+        const question = mockQuestions[currentMockQuestionIndex];
+        if (!question) return null;
+
+        return (
+            <div className="max-w-4xl mx-auto w-full space-y-8 py-8 animate-fade-in">
+                <header className="flex items-center justify-between bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
+                            <Clock className="w-5 h-5 text-indigo-600" />
                         </div>
-                        <div className="w-[1px] h-10 bg-white/10" />
-                        <div className="flex flex-col">
-                            <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest text-center">Accuracy</span>
-                            <span className="text-2xl font-black text-blue-400 text-center">{Math.round((mcqResults.filter(r => r.correct).length / (mcqResults.length || 1)) * 100)}%</span>
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Time Remaining</p>
+                            <p className="text-xl font-black text-gray-900 dark:text-gray-100">{formatTime(mockDurationLeft)}</p>
                         </div>
-                        <button 
-                            onClick={handleStudyRound}
-                            className="px-10 py-3 bg-white text-gray-900 rounded-full font-black uppercase text-[10px] tracking-widest hover:bg-gray-100 transition-all shadow-xl"
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Question</p>
+                        <p className="text-xl font-black text-indigo-600">{currentMockQuestionIndex + 1} / {mockQuestions.length}</p>
+                    </div>
+                </header>
+
+                <div className="bg-white dark:bg-gray-800 p-10 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-xl space-y-8">
+                    <div className="flex items-start justify-between gap-6">
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white leading-relaxed">
+                            {question.question}
+                        </h3>
+                        <div className="flex flex-col items-end gap-2">
+                            <button 
+                                onClick={() => speakText(question.question)}
+                                className={`p-4 rounded-2xl flex-shrink-0 transition-all ${isSpeaking ? 'bg-indigo-600 text-white shadow-lg animate-pulse' : 'bg-gray-50 dark:bg-gray-900 text-gray-400 hover:text-indigo-600'}`}
+                                title="Read Question"
+                            >
+                                🔊
+                            </button>
+                            <button 
+                                onClick={() => setIsAutoReadEnabled(prev => !prev)}
+                                className="text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-indigo-500 transition-all"
+                            >
+                                {isAutoReadEnabled ? 'Auto-Read: ON' : 'Auto-Read: OFF'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <textarea
+                            value={mockResponses[currentMockQuestionIndex] || ''}
+                            onChange={(e) => setMockResponses(prev => ({ ...prev, [currentMockQuestionIndex]: e.target.value }))}
+                            placeholder="Type your answer here, or click 'Start Speaking'..."
+                            className="w-full h-48 p-6 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl text-sm leading-relaxed resize-none text-gray-900 dark:text-white focus:border-indigo-500 outline-none transition-all"
+                        />
+                        <div className="flex items-center justify-between">
+                            <button
+                                onClick={toggleSpeechRecognitionMock}
+                                className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${listeningIdx === 'mock' ? 'bg-red-50 text-red-600 border border-red-200 animate-pulse' : 'bg-white dark:bg-gray-800 text-gray-600 border border-gray-200 dark:border-gray-700 hover:bg-gray-50'}`}
+                            >
+                                🎙️ {listeningIdx === 'mock' ? 'Listening...' : 'Start Speaking'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                    <button
+                        onClick={reviewLastMockQuestion}
+                        disabled={currentMockQuestionIndex === 0}
+                        className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${currentMockQuestionIndex === 0 ? 'opacity-50 cursor-not-allowed text-gray-400' : 'bg-white dark:bg-gray-800 text-gray-600 border border-gray-200 dark:border-gray-700 hover:bg-gray-50'}`}
+                    >
+                        ← Previous
+                    </button>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={finishMockInterview}
+                            className="px-8 py-4 bg-red-50 text-red-600 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-200 hover:bg-red-100 transition-all"
                         >
-                            Complete Round
+                            End Early
+                        </button>
+                        <button
+                            onClick={submitMockAnswerAndNext}
+                            className="px-10 py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-indigo-700 transition-all"
+                        >
+                            {currentMockQuestionIndex < mockQuestions.length - 1 ? 'Next Question →' : 'Finish Interview'}
                         </button>
                     </div>
                 </div>
-            )}
+            </div>
+        );
+    };
 
-            {stage === 'round_summary' && allRoundResults.length > 0 && (
-                <div className="max-w-4xl mx-auto w-full space-y-10 animate-slide-up pb-20">
-                    <header className="text-center space-y-4">
-                        <span className="text-6xl block">🏁</span>
-                        <h2 className="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Round {currentRoundIndex + 1} Assessment</h2>
-                        <p className="text-gray-500 text-lg font-medium italic">Finished the <span className="text-blue-600 font-black">{getRounds()[currentRoundIndex]}</span> round.</p>
-                    </header>
+    const renderMockReport = () => {
+        let overallScore = 0;
+        if (mockReportFeedback?.question_evaluations) {
+            const totalScore = mockReportFeedback.question_evaluations.reduce((acc, curr) => acc + (curr.score || 0), 0);
+            overallScore = Math.max(0, Math.round(totalScore / mockQuestions.length));
+        }
+        const scoreColor = overallScore >= 80 ? 'text-emerald-500' : overallScore >= 50 ? 'text-amber-500' : 'text-rose-500';
+        const circumference = 2 * Math.PI * 28;
+        const strokeDashoffset = circumference - (overallScore / 100) * circumference;
 
-                    <div className="bg-white dark:bg-gray-800 p-10 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-2xl space-y-12">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-                            <div className="p-8 bg-emerald-50/50 border border-emerald-100 rounded-[2rem] space-y-4">
-                                <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2"><span>💪</span> What went well</h4>
-                                <p className="text-sm font-bold text-gray-800 leading-relaxed italic">"{allRoundResults[allRoundResults.length-1].what_went_well}"</p>
-                            </div>
-                            <div className="p-8 bg-indigo-50/50 border border-indigo-100 rounded-[2rem] space-y-4">
-                                <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2"><span>🎯</span> Key Next Step</h4>
-                                <p className="text-sm font-bold text-gray-800 leading-relaxed italic">"{allRoundResults[allRoundResults.length-1].main_gap}"</p>
-                            </div>
+        return (
+            <div className="max-w-4xl mx-auto w-full space-y-12 py-12 animate-slide-up">
+                <header className="text-center space-y-4">
+                    <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                        <Trophy className="w-10 h-10 text-emerald-600" />
+                    </div>
+                    <h2 className="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Performance Report</h2>
+                    <p className="text-gray-500 font-bold text-sm">Mock Interview Completed</p>
+                </header>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-xl space-y-6">
+                        <div className="flex justify-between items-start">
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mt-2">Summary</h3>
+                            
+                            {mockReportFeedback && mockReportFeedback.question_evaluations && (
+                                <div className="relative w-16 h-16 flex items-center justify-center">
+                                    <svg className="w-full h-full transform -rotate-90">
+                                        <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-gray-100 dark:text-gray-700" />
+                                        <circle 
+                                            cx="32" cy="32" r="28" 
+                                            stroke="currentColor" strokeWidth="6" fill="transparent" 
+                                            strokeDasharray={circumference} 
+                                            strokeDashoffset={strokeDashoffset} 
+                                            className={`${scoreColor} transition-all duration-1000 ease-out`} 
+                                        />
+                                    </svg>
+                                    <div className="absolute flex flex-col items-center justify-center">
+                                        <span className={`text-sm font-black ${scoreColor}`}>{overallScore}%</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
+                        <div className="space-y-4">
+                        <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl">
+                            <span className="text-xs font-bold text-gray-500 uppercase">Role</span>
+                            <span className="text-sm font-black text-slate-800 dark:text-slate-200">{mockConfig.role}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl">
+                            <span className="text-xs font-bold text-gray-500 uppercase">Difficulty</span>
+                            <span className="text-sm font-black text-slate-800 dark:text-slate-200">{mockConfig.difficulty}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl">
+                            <span className="text-xs font-bold text-gray-500 uppercase">Attempted</span>
+                            <span className="text-sm font-black text-slate-800 dark:text-slate-200">{Object.keys(mockResponses).filter(k => mockResponses[k].trim().length > 0).length} / {mockQuestions.length}</span>
+                        </div>
+                        <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-900 rounded-2xl">
+                            <span className="text-xs font-bold text-gray-500 uppercase text-rose-500">Unanswered</span>
+                            <span className="text-sm font-black text-rose-600">{mockQuestions.length - Object.keys(mockResponses).filter(k => mockResponses[k].trim().length > 0).length}</span>
+                        </div>
+                    </div>
+                </div>
 
-                        {allRoundResults[allRoundResults.length-1].score < 60 && (
-                            <div className="pt-10 border-t border-gray-50 dark:border-gray-700 space-y-6">
-                                <div className="text-center">
-                                    <h4 className="text-[10px] font-black text-rose-500 uppercase tracking-widest mb-2">We detected some weak areas</h4>
-                                    <p className="text-sm font-medium text-gray-500 italic">Would you like a focused drill to master these before proceeding?</p>
+                <div className="bg-indigo-600 p-8 rounded-[3rem] text-white shadow-xl space-y-6 relative overflow-hidden flex flex-col justify-between">
+                    <div className="absolute -right-10 -bottom-10 opacity-10">
+                        <Zap className="w-48 h-48" />
+                    </div>
+                    <div className="relative z-10 flex flex-col h-full justify-between">
+                        {isGeneratingMockReport || !mockReportFeedback ? (
+                            <div className="flex flex-col items-center justify-center p-8 space-y-4">
+                                <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+                                <p className="text-sm font-bold text-indigo-200 uppercase tracking-widest text-center">Analyzing Responses...</p>
+                            </div>
+                        ) : (
+                            <div>
+                                <h3 className="text-xs font-black text-indigo-200 uppercase tracking-widest mb-4">AI Feedback</h3>
+                                <div className="space-y-4 mb-6">
+                                    {mockReportFeedback.tips?.length > 0 && (
+                                        <div className="bg-white/10 p-4 rounded-2xl">
+                                            <p className="text-xs font-black text-indigo-200 uppercase tracking-widest mb-2">💡 Top Tip</p>
+                                            <p className="text-sm font-bold leading-relaxed">{mockReportFeedback.tips[0]}</p>
+                                        </div>
+                                    )}
+                                    {mockReportFeedback.areas_of_improvement?.length > 0 && (
+                                        <div className="bg-indigo-900/40 p-4 rounded-2xl">
+                                            <p className="text-xs font-black text-indigo-200 uppercase tracking-widest mb-2">🎯 Focus Area</p>
+                                            <p className="text-sm font-bold leading-relaxed">{mockReportFeedback.areas_of_improvement[0]}</p>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex flex-wrap gap-4 justify-center">
-                                    {Object.entries(allRoundResults[allRoundResults.length-1].dimension_avgs)
-                                        .filter(([_, score]) => score < 60)
-                                        .map(([dim, _]) => (
-                                            <button 
-                                                key={dim}
-                                                onClick={() => handleDrill(dim === 'edge_cases' ? 'Edge Cases & Optimization' : dim === 'communication' ? 'Behavioral & Leadership' : 'Foundational Topics')}
-                                                className="px-8 py-4 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-rose-500/20"
-                                            >
-                                                Practise {dim.replace('_', ' ')} questions
-                                            </button>
-                                        ))}
-                                </div>
+                                <button 
+                                    onClick={() => {
+                                        setIsMockReportActive(false);
+                                        setMockConfig({ role: '', difficulty: 'Mixed', duration: 15 });
+                                    }}
+                                    className="px-6 py-3 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 transition-all shadow-lg"
+                                >
+                                    Start New Interview
+                                </button>
                             </div>
                         )}
-
-                        <div className="pt-10 border-t border-gray-50 dark:border-gray-700 flex flex-col md:flex-row gap-4">
-                            <button onClick={() => setActiveTab('teach')} className="flex-1 py-5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-2xl font-black uppercase text-[10px] transition-all">Review Lessons</button>
-                            <button onClick={handleNextRound} className="flex-2 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase text-[10px] shadow-xl shadow-blue-500/20 transition-all">
-                                {currentRoundIndex < getRounds().length - 1 ? 'Proceed to Next Round' : 'Finish Simulation'}
-                            </button>
-                        </div>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {stage === 'results' && finalReport && (
-                <div className="max-w-6xl mx-auto w-full space-y-10 pb-10 animate-slide-up">
-                    <header className="text-center">
-                        <BarChart4 className="w-16 h-16 text-indigo-600 mx-auto mb-6" />
-                        <h2 className="text-4xl font-black text-gray-900 dark:text-white uppercase tracking-tight">{company} Interview Report</h2>
-                    </header>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-1 space-y-6">
-                            <div className="p-8 bg-white dark:bg-gray-800 rounded-[2.5rem] border border-gray-100 shadow-xl">
-                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-6">Overall Score</h3>
-                                <div className="text-7xl font-black text-gray-900 dark:text-white">
-                                    {finalReport.overall_score}%
+            <div className="space-y-6">
+                <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-wider pl-4">Full Review</h3>
+                <div className="space-y-8">
+                    {mockQuestions.map((q, idx) => (
+                        <div key={idx} className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-sm space-y-6">
+                            <div className="flex items-start gap-4">
+                                <div className="w-8 h-8 flex-shrink-0 bg-gray-100 dark:bg-gray-900 text-gray-500 font-black rounded-lg flex items-center justify-center text-xs mt-1">
+                                    Q{idx + 1}
                                 </div>
-                            </div>
-                            <button onClick={reset} className="w-full py-5 bg-white text-gray-900 border border-gray-100 rounded-2xl font-black uppercase text-[10px] hover:bg-gray-50">
-                                Start New Simulation
-                            </button>
-                        </div>
-                        <div className="lg:col-span-2 space-y-8">
-                            <div className="p-8 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 rounded-[2.5rem]">
-                                <h4 className="text-[10px] font-black text-blue-600 uppercase mb-3">Immediate Next Focus</h4>
-                                <p className="text-xl font-black text-gray-900 dark:text-white">{finalReport.next_focus || "Keep practicing."}</p>
-                            </div>
-                            <div className="space-y-4">
-                                <h4 className="text-xs font-black uppercase tracking-widest">Round Breakdown</h4>
-                                <div className="space-y-3">
-                                    {allRoundResults.map((r, i) => (
-                                        <div key={i} className="flex items-center justify-between p-5 bg-white dark:bg-gray-800 border border-gray-100 rounded-2xl">
-                                            <p className="text-sm font-black">{r.round}</p>
-                                            <span className="text-lg font-black text-blue-600">{r.score}%</span>
+                                <div className="flex-1">
+                                    <p className="text-base font-bold text-gray-900 dark:text-gray-100 mt-1 mb-4">{q.question}</p>
+                                    
+                                    {mockReportFeedback?.question_evaluations?.[idx] && (
+                                        <div className="flex items-center gap-4 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl mb-2 w-fit border border-gray-100 dark:border-gray-800">
+                                            <div className={`text-2xl font-black ${
+                                                mockReportFeedback.question_evaluations[idx].score >= 80 ? 'text-emerald-500' :
+                                                mockReportFeedback.question_evaluations[idx].score >= 50 ? 'text-amber-500' : 'text-rose-500'
+                                            }`}>
+                                                {mockReportFeedback.question_evaluations[idx].score}%
+                                            </div>
+                                            <div className="text-xs font-bold text-gray-600 dark:text-gray-400 border-l-2 border-gray-200 dark:border-gray-700 pl-4 max-w-sm leading-relaxed">
+                                                {mockReportFeedback.question_evaluations[idx].feedback}
+                                            </div>
                                         </div>
-                                    ))}
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="pl-12 space-y-4">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-2">Your Answer</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl">
+                                        {mockResponses[idx] ? mockResponses[idx] : <span className="italic opacity-50">No answer provided.</span>}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-2">Ideal Approach</p>
+                                    <p className="text-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed">
+                                        {q.suggested_answer}
+                                    </p>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    ))}
                 </div>
-            )}
+            </div>
 
-            {stage === 'results' && isLoadingSuggestions && (
-                <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
-                    <p className="text-sm font-black text-gray-500 uppercase">Synthesizing Final Report...</p>
+            <div className="flex justify-center pt-8">
+                <button 
+                    onClick={() => {
+                        setIsMockReportActive(false);
+                        setView('home');
+                    }}
+                    className="px-10 py-5 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-all shadow-xl"
+                >
+                    Close Report & Go Home
+                </button>
+            </div>
+        </div>
+        );
+    };
+
+    const renderMockVideos = () => (
+        <div className="max-w-4xl mx-auto w-full space-y-12 py-12 animate-slide-up">
+            <header className="flex items-center justify-between">
+                <button onClick={() => setView('home')} className="p-3 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 transition-all shadow-sm">
+                    <ArrowLeft className="w-5 h-5 text-gray-400" />
+                </button>
+                <div className="text-center">
+                    <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tight">Mock Interview Videos</h2>
+                    <p className="text-gray-500 font-bold text-[10px] uppercase tracking-widest mt-1">Watch and learn</p>
+                </div>
+                <div className="w-11 h-11"></div>
+            </header>
+
+            <div className="bg-white dark:bg-gray-800 p-8 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-xl space-y-6">
+                <div className="flex items-center gap-4">
+                    <input
+                        type="text"
+                        value={videoQuery}
+                        onChange={(e) => setVideoQuery(e.target.value)}
+                        placeholder="Search for mock interviews (e.g. Google Software Engineer mock interview)"
+                        className="flex-1 p-5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl text-sm font-bold text-gray-900 dark:text-white outline-none focus:border-indigo-500 transition-all"
+                        onKeyDown={(e) => e.key === 'Enter' && handleFetchVideos()}
+                    />
+                    <button 
+                        onClick={handleFetchVideos}
+                        disabled={isLoadingVideos}
+                        className={`px-8 py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs transition-all ${isLoadingVideos ? 'bg-indigo-400 text-white cursor-wait' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg'}`}
+                    >
+                        {isLoadingVideos ? 'Searching...' : 'Search'}
+                    </button>
+                </div>
+
+                {videos && videos.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 pt-6">
+                        {videos.map((vid, idx) => (
+                            <div 
+                                key={idx} 
+                                onClick={() => setSelectedVideoId(vid.id)}
+                                className="group cursor-pointer bg-gray-50 dark:bg-gray-900 rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-800 hover:border-indigo-500 hover:shadow-xl transition-all"
+                            >
+                                <div className="relative aspect-video bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                                    <img src={vid.thumbnails[0]} alt={vid.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 flex justify-center items-center rounded-lg text-white text-[10px] font-bold">
+                                        {vid.duration}
+                                    </div>
+                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-all flex items-center justify-center">
+                                        <div className="w-12 h-12 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="w-0 h-0 border-t-[8px] border-t-transparent border-l-[14px] border-l-white border-b-[8px] border-b-transparent ml-1"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-5 space-y-3">
+                                    <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug">{vid.title}</h4>
+                                    <p className="text-xs font-medium text-gray-500 line-clamp-1">{vid.channel}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {selectedVideoId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm shadow-xl" onClick={() => setSelectedVideoId(null)}>
+                    <div className="w-full max-w-5xl aspect-video bg-black rounded-[2rem] overflow-hidden relative border border-gray-800 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <button 
+                            onClick={() => setSelectedVideoId(null)}
+                            className="absolute top-4 right-4 z-10 w-10 h-10 bg-black/50 hover:bg-black text-white rounded-full flex items-center justify-center transition-all"
+                        >
+                            ✕
+                        </button>
+                        <iframe 
+                            src={`https://www.youtube.com/embed/${selectedVideoId}?autoplay=1`}
+                            className="w-full h-full"
+                            allow="autoplay; encrypted-media"
+                            allowFullScreen
+                        ></iframe>
+                    </div>
                 </div>
             )}
         </div>
     );
+
+    const renderMockInterview = () => {
+        if (isLiveSessionActive) return (
+            <LiveInterviewSession
+                mockConfig={mockConfig}
+                company={company}
+                onFinish={handleLiveFinish}
+                onCancel={() => setIsLiveSessionActive(false)}
+            />
+        );
+        if (isMockReportActive) return renderMockReport();
+        if (isMockSessionActive) return renderMockSession();
+        
+        return (
+            <div className="space-y-4">
+                <div className="flex justify-center p-2 bg-gray-100 dark:bg-gray-800 rounded-2xl w-fit mx-auto mt-6">
+                    <button 
+                        onClick={() => setMockTab('setup')} 
+                        className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${mockTab === 'setup' ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    >
+                        Setup Session
+                    </button>
+                    <button 
+                        onClick={() => setMockTab('videos')} 
+                        className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${mockTab === 'videos' ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    >
+                        Watch Videos
+                    </button>
+                </div>
+                {mockTab === 'setup' ? renderMockConfig() : renderMockVideos()}
+            </div>
+        );
+    };
+
+
+    const renderHome = () => (
+        <div className="max-w-6xl mx-auto w-full space-y-12 py-12 animate-slide-up">
+            <header className="text-center space-y-4">
+                <h1 className="text-5xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">
+                    Interview <span className="text-blue-600">Mastery</span>
+                </h1>
+                <p className="text-gray-500 font-bold text-lg uppercase tracking-widest">Select your preparation mode</p>
+            </header>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Question Bank Card */}
+                {/* Question Bank removed as requested */}
+
+                {/* Mock Interview Card */}
+                <div 
+                    onClick={() => setView('mock_interview')}
+                    className="group relative bg-white dark:bg-gray-800 p-8 rounded-[3rem] border border-gray-100 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-all cursor-pointer overflow-hidden"
+                >
+                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Terminal className="w-32 h-32 text-indigo-600" />
+                    </div>
+                    <div className="relative z-10 space-y-6">
+                        <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl flex items-center justify-center">
+                            <Terminal className="w-8 h-8 text-indigo-600" />
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-black text-gray-900 dark:text-white uppercase">Mock Interview</h3>
+                            <p className="text-gray-500 text-sm mt-2 font-medium">Strict, timed simulation of a real interview process. No hints allowed.</p>
+                        </div>
+                        <div className="flex items-center text-indigo-600 font-black text-xs uppercase tracking-widest gap-2">
+                            <span>Start Simulation</span>
+                            <ChevronRight className="w-4 h-4" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Gamification Card */}
+                <div 
+                    onClick={() => setView('gamification')}
+                    className="group relative p-8 rounded-[3rem] shadow-xl hover:shadow-2xl transition-all cursor-pointer overflow-hidden bg-gradient-to-br from-purple-600 via-fuchsia-600 to-pink-500 hover:from-purple-500 hover:via-fuchsia-500 hover:to-pink-400"
+                >
+                    <div className="absolute top-0 right-0 p-6 opacity-15 group-hover:opacity-25 transition-opacity">
+                        <Trophy className="w-36 h-36 text-white" />
+                    </div>
+                    <div className="absolute -bottom-8 -left-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Award className="w-40 h-40 text-white" />
+                    </div>
+                    <div className="absolute top-12 left-1/2 w-32 h-32 bg-white/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
+                    <div className="relative z-10 space-y-6">
+                        <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center ring-2 ring-white/20 group-hover:ring-white/40 transition-all shadow-lg">
+                            <span className="text-3xl">🎮</span>
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-black text-white uppercase tracking-tight">Gamification</h3>
+                            <p className="text-white/80 text-sm mt-2 font-medium">Level up, earn XP, unlock badges & crush daily challenges. Your career journey, gamified.</p>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center text-white font-black text-xs uppercase tracking-widest gap-2 group-hover:gap-3 transition-all">
+                                <span>Play Now</span>
+                                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                            <div className="flex -space-x-1">
+                                <span className="text-lg">🔥</span>
+                                <span className="text-lg">⚡</span>
+                                <span className="text-lg">🏆</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-blue-600 rounded-[3rem] p-12 text-white relative overflow-hidden shadow-2xl shadow-blue-500/20">
+                <div className="absolute -right-20 -bottom-20 opacity-10">
+                    <Zap className="w-96 h-96" />
+                </div>
+                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div className="space-y-4 text-center md:text-left">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 rounded-full text-[10px] font-black uppercase tracking-widest">
+                            <Star className="w-3 h-3 fill-current" />
+                            <span>Daily Goal</span>
+                        </div>
+                        <h2 className="text-3xl font-black uppercase tracking-tight">Your Current Streak: {streak} Days</h2>
+                        <p className="text-blue-100 font-medium">Prepare consistently to improve your selection probability significantly.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="flex flex-col h-full space-y-6 p-6 overflow-y-auto custom-scrollbar bg-gray-50/30 dark:bg-gray-900/10">
+
+            {view === 'home' && renderHome()}
+
+            {view === 'question_bank' && (
+                <div className="flex flex-col items-center justify-center py-20 space-y-6">
+                    <span className="text-6xl">🛠️</span>
+                    <h2 className="text-2xl font-black uppercase tracking-tight">Feature Unavailable</h2>
+                    <p className="text-gray-500 font-medium text-center max-w-md">The Question Bank has been removed. Please use the Mock Interview for preparation.</p>
+                    <button onClick={() => setView('home')} className="px-8 py-3 bg-blue-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-blue-700 transition-all">Back to Home</button>
+                </div>
+            )}
+
+            {view === 'mock_interview' && renderMockInterview()}
+            {view === 'gamification' && <GamificationDashboard onBack={() => setView('home')} onPlay={(level) => { setArenaLevel(level); setView('arena'); }} />}
+            {view === 'arena' && <ArenaGame levelConfig={arenaLevel} onExit={() => setView('gamification')} />}
+        </div>
+    );
 };
+
+// Helper icon
+const MedalIcon = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15" />
+    <path d="M11 12 5.12 2.2" />
+    <path d="m13 12 5.88-9.8" />
+    <path d="M8 7h8" />
+    <circle cx="12" cy="17" r="5" />
+    <path d="M12 18v-2h-.5" />
+  </svg>
+);
+
+const Flame = ({ className }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+    </svg>
+);
 
 export default InterviewAgentUI;

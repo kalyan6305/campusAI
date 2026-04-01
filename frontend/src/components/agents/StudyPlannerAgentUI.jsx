@@ -502,7 +502,7 @@ const StudyPlannerAgentUI = ({ showHistory, setShowHistory }) => {
             </div>
           ) : (
             history.map((item) => (
-              <button
+              <div
                 key={item.session_id}
                 onClick={() => {
                   setSessionId(item.session_id);
@@ -510,7 +510,7 @@ const StudyPlannerAgentUI = ({ showHistory, setShowHistory }) => {
                   fetchPlan(item.session_id);
                   setShowHistory(false);
                 }}
-                className={`w-full text-left p-4 rounded-2xl border transition-all group ${sessionId === item.session_id
+                className={`w-full text-left p-4 rounded-2xl border transition-all group cursor-pointer ${sessionId === item.session_id
                     ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800'
                     : 'bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-blue-500/30 shadow-sm'
                   }`}
@@ -531,7 +531,7 @@ const StudyPlannerAgentUI = ({ showHistory, setShowHistory }) => {
                 <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
                   <ArrowRight className="w-3 h-3 text-blue-500" /> Continue Mastery
                 </div>
-              </button>
+              </div>
             ))
           )}
         </div>

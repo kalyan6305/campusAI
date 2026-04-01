@@ -9,7 +9,6 @@ const LANG_OPTIONS = [
     { value: 'python', label: 'Python' },
     { value: 'javascript', label: 'JavaScript' },
     { value: 'java', label: 'Java' },
-    { value: 'cpp', label: 'C++' },
     { value: 'sql', label: 'SQL' }
 ];
 
@@ -17,7 +16,6 @@ const DEFAULT_CODE = {
     python: 'print("Hello, CampusAI!")',
     javascript: 'console.log("Hello, CampusAI!");',
     java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, CampusAI!");\n    }\n}',
-    cpp: '#include <iostream>\nusing namespace std;\nint main() {\n    cout << "Hello, CampusAI!" << endl;\n    return 0;\n}',
     sql: 'CREATE TABLE students (id INTEGER PRIMARY KEY, name TEXT);\nINSERT INTO students VALUES (1, \'Alice\');\nINSERT INTO students VALUES (2, \'Bob\');\nSELECT * FROM students;',
 };
 
@@ -173,7 +171,7 @@ const CodingAgentUI = () => {
         setOriginalCode(currentCode);
 
         try {
-            const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+            const token = sessionStorage.getItem('access_token') || sessionStorage.getItem('token');
             const response = await fetch('http://localhost:8000/api/v1/coding/transform', {
                 method: 'POST',
                 headers: {
@@ -216,7 +214,7 @@ const CodingAgentUI = () => {
         setIsRunning(true);
         setOutput('⏳ Running code...');
         try {
-            const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+            const token = sessionStorage.getItem('access_token') || sessionStorage.getItem('token');
             const response = await fetch('http://localhost:8000/api/v1/coding/run', {
                 method: 'POST',
                 headers: {
@@ -260,7 +258,7 @@ const CodingAgentUI = () => {
         console.log('Language:', language);
 
         try {
-            const token = localStorage.getItem('access_token') || localStorage.getItem('token');
+            const token = sessionStorage.getItem('access_token') || sessionStorage.getItem('token');
             const response = await fetch('http://localhost:8000/api/v1/coding/generate', {
                 method: 'POST',
                 headers: {

@@ -22,6 +22,7 @@ class InterviewRoleRequest(BaseModel):
     experience_years: Optional[int] = 0
     num_questions: Optional[int] = 5
     selected_topic: Optional[str] = None
+    is_mock: Optional[bool] = False
 
 class InterviewQuestionsResponse(BaseModel):
     role: str
@@ -78,6 +79,22 @@ class FinalInterviewReportResponse(BaseModel):
     learning_plan: List[str]
     next_focus: str
 
+class MockReportRequest(BaseModel):
+    role: str
+    difficulty: str
+    questions: List[str]
+    answers: List[str]
+
+class QuestionEvaluation(BaseModel):
+    score: int
+    feedback: str
+
+class MockReportResponse(BaseModel):
+    tips: List[str]
+    suggestions: List[str]
+    areas_of_improvement: List[str]
+    question_evaluations: List[QuestionEvaluation]
+
 class InterviewTopicsRequest(BaseModel):
     company: str
     round_type: str
@@ -129,3 +146,24 @@ class InterviewProcessResponse(BaseModel):
     role: str
     rounds: List[str]
     justification: Optional[str] = None
+
+# --- Dynamic / Adaptive Questioning ---
+class QAPair(BaseModel):
+    question: str
+    answer: str
+
+class DynamicQuestionRequest(BaseModel):
+    role: str
+    company: Optional[str] = "Generic"
+    round_type: Optional[str] = "Technical"
+    difficulty: Optional[str] = "Mixed"
+    history: List[QAPair] = []          # All previous Q&A pairs
+    total_questions: Optional[int] = 8  # Target number of questions in the session
+    questions_asked: Optional[int] = 0  # How many have been asked so far
+
+class DynamicQuestionResponse(BaseModel):
+    question: str
+    topic: Optional[str] = None
+    difficulty: Optional[str] = None
+    is_follow_up: bool = False          # True if this is a follow‑up based on previous answer
+    follow_up_reason: Optional[str] = None  # Why this follow‑up was chosen

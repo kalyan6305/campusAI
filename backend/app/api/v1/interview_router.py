@@ -21,8 +21,13 @@ from app.schemas.interview import (
     InterviewTeachRequest,
     InterviewTeachResponse,
     InterviewProcessRequest,
-    InterviewProcessResponse
+    InterviewProcessResponse,
+    MockReportRequest,
+    MockReportResponse,
+    DynamicQuestionRequest,
+    DynamicQuestionResponse,
 )
+from youtube_search import YoutubeSearch
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/interview", tags=["Interview Agent"])
@@ -45,7 +50,8 @@ async def generate_interview_questions(
             user_type=request.user_type,
             experience_years=request.experience_years,
             num_questions=request.num_questions,
-            selected_topic=request.selected_topic
+            selected_topic=request.selected_topic,
+            is_mock=request.is_mock if hasattr(request, 'is_mock') else False
         )
         if not questions:
             # Return empty list with 200 instead of 500 to avoid UI crash, 
@@ -204,4 +210,75 @@ async def predict_interview_process(
         return InterviewProcessResponse(**process)
     except Exception as e:
         logger.error(f"Failed to predict interview process: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+@router.post("/mastery")
+async def get_topic_mastery(
+    performance_data: List[dict],
+    current_user: User = Depends(get_current_user)
+):
+    """Calculate topic mastery based on performance data."""
+    try:
+        agent = InterviewPreparationAgent()
+        mastery = agent.calculate_topic_mastery(performance_data)
+        return mastery
+    except Exception as e:
+        logger.error(f"Failed to calculate mastery: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/mock_report", response_model=MockReportResponse)
+async def generate_mock_report_api(
+    request: MockReportRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Generate a comprehensive report for a mock interview."""
+    try:
+        agent = InterviewPreparationAgent()
+        report = await agent.generate_mock_report(
+            request.role, 
+            request.difficulty, 
+            request.questions, 
+            request.answers
+        )
+        return MockReportResponse(**report)
+    except Exception as e:
+        logger.error(f"Failed to generate mock report: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/videos")
+async def get_interview_videos(
+    query: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Fetch YouTube videos for mock interviews based on search query."""
+    try:
+        # Fetch up to 10 results
+        results = YoutubeSearch(query, max_results=10).to_dict()
+        return {"videos": results}
+    except Exception as e:
+        logger.error(f"Failed to fetch mock interview videos: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/dynamic-question", response_model=DynamicQuestionResponse)
+async def get_dynamic_next_question(
+    request: DynamicQuestionRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generate the next interview question adaptively based on full conversation history.
+    The AI decides whether to probe deeper on the last answer or move to a fresh topic.
+    """
+    try:
+        agent = InterviewPreparationAgent()
+        result = await agent.generate_next_question(
+            role=request.role,
+            company=request.company,
+            round_type=request.round_type,
+            difficulty=request.difficulty,
+            history=[h.dict() for h in request.history],
+            total_questions=request.total_questions,
+            questions_asked=request.questions_asked,
+        )
+        return DynamicQuestionResponse(**result)
+    except Exception as e:
+        logger.error(f"Failed to generate dynamic question: {e}")
         raise HTTPException(status_code=500, detail=str(e))

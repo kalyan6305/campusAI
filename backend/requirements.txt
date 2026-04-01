@@ -39,6 +39,7 @@ fpdf2==2.8.1
 
 # Search
 duckduckgo-search==8.1.1
+youtube-search
 
 pandas
 openpyxl

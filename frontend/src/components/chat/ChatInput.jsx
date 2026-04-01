@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Image as ImageIcon, Mic, SendHorizontal, Loader2 } from 'lucide-react';
+import { Mic, SendHorizontal, Loader2 } from 'lucide-react';
 
 export default function ChatInput({ onSend, disabled, voiceState, onVoiceToggle, onNewChat }) {
     const [input, setInput] = useState('');
@@ -95,15 +95,6 @@ export default function ChatInput({ onSend, disabled, voiceState, onVoiceToggle,
                     <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl">
                         New Chat
                     </span>
-                </button>
-
-                {/* Upload Placeholder */}
-                <button
-                    type="button"
-                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded-xl hover:bg-white dark:hover:bg-gray-800"
-                    title="Image upload (coming soon)"
-                >
-                    <ImageIcon className="h-5 w-5" />
                 </button>
 
                 {/* Text Area */}
