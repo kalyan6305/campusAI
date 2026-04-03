@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGamificationStore, LEVELS, BADGES } from '../../store/gamificationStore';
-import { Trophy, Star, Target, Zap, Award, ChevronRight, Calendar, CheckCircle2, Circle, Clock, Heart, TrendingUp, ArrowLeft, Sparkles, Lock, Play } from 'lucide-react';
+import { Trophy, Star, Target, Zap, Award, ChevronRight, Calendar, CheckCircle2, Circle as CircleIcon, Clock as ClockIcon, Heart as HeartIcon, TrendingUp, ArrowLeft, Sparkles, Lock, Play } from 'lucide-react';
 
 const CAMPAIGN_LEVELS = [
   {
@@ -363,9 +363,9 @@ const GamificationDashboard = ({ onBack, onPlay }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
               {[
-                { id: 'freeze', name: 'Time Freeze', desc: 'Stops clock for 5s', icon: <Clock className="w-5 h-5" />, cost: 200, color: 'blue' },
-                { id: 'fiftyFifty', name: '50:50', desc: 'Removes 2 options', icon: <Circle className="w-5 h-5" />, cost: 300, color: 'purple' },
-                { id: 'revive', name: 'Revive Heart', desc: 'Get +1 life', icon: <Heart className="w-5 h-5" />, cost: 500, color: 'rose' }
+                { id: 'freeze', name: 'Time Freeze', desc: 'Stops clock for 5s', icon: <ClockIcon className="w-5 h-5" />, cost: 200, color: 'blue' },
+                { id: 'fiftyFifty', name: '50:50', desc: 'Removes 2 options', icon: <CircleIcon className="w-5 h-5" />, cost: 300, color: 'purple' },
+                { id: 'revive', name: 'Revive Heart', desc: 'Get +1 life', icon: <HeartIcon className="w-5 h-5" />, cost: 500, color: 'rose' }
               ].map(pw => (
                 <div key={pw.name} className="bg-white dark:bg-gray-800 p-5 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between">
                   <div className="flex justify-between items-start mb-3">
@@ -555,7 +555,7 @@ const GamificationDashboard = ({ onBack, onPlay }) => {
                           <CheckCircle2 className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
                         </motion.div>
                       ) : (
-                        <Circle className="w-5 h-5 text-gray-300 dark:text-gray-600 mt-0.5 shrink-0" />
+                        <CircleIcon className="w-5 h-5 text-gray-300 dark:text-gray-600 mt-0.5 shrink-0" />
                       )}
                       <div className="flex-1">
                         <p className={`text-sm font-bold ${challenge.completed ? 'text-emerald-800 dark:text-emerald-200 line-through' : 'text-gray-900 dark:text-gray-100'}`}>
