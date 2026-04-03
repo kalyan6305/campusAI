@@ -41,11 +41,16 @@ async def process_resume_optimization(
             analysis = await agent.analyze_alignment(resume_text, job_description)
             
             # Step 3: Optimization
-            yield f"data: {json.dumps({'status': 'OPTIMIZING', 'message': 'Optimizing resume content for ATS...'})}\n\n"
-            optimized_md = await agent.optimize_resume(resume_text, job_description, analysis)
+            yield f"data: {json.dumps({'status': 'OPTIMIZING', 'message': 'Re-engineering profile for maximum impact...'})}\n\n"
+            optimized_data = await agent.optimize_resume(resume_text, job_description, analysis, role)
+            optimized_md = optimized_data.get("optimized_resume_md", "")
+            insights = optimized_data.get("optimization_insights", "Successfully aligned with target role.")
+            unmatched = optimized_data.get("unmatched_items", [])
+            optimized_score = optimized_data.get("optimized_score", 0)
+            suggestions = optimized_data.get("score_booster_suggestions", [])
             
             # Step 4: PDF Generation
-            yield f"data: {json.dumps({'status': 'GENERATING', 'message': 'Generating your optimized PDF...'})}\n\n"
+            yield f"data: {json.dumps({'status': 'GENERATING', 'message': 'Generating your world-class PDF...'})}\n\n"
             pdf_url = agent.generate_pdf(optimized_md, role)
             
             # Step 5: Final Results
@@ -53,9 +58,13 @@ async def process_resume_optimization(
                 "matched_skills": analysis.get("matched_skills", []),
                 "missing_skills": analysis.get("missing_skills", []),
                 "keywords": analysis.get("keywords", []),
-                "match_score": analysis.get("match_score", 0),
+                "original_score": analysis.get("match_score", 0),
+                "optimized_score": optimized_score,
                 "pdf_url": pdf_url,
-                "optimized_resume_md": optimized_md
+                "optimized_resume_md": optimized_md,
+                "optimization_insights": insights,
+                "unmatched_items": unmatched,
+                "score_booster_suggestions": suggestions
             }
             
             yield f"data: {json.dumps({'status': 'COMPLETED', 'data': report_data})}\n\n"
