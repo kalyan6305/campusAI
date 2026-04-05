@@ -631,10 +631,10 @@ Interview so far (Q&A history):
 
 Your task:
 1. Analyse the candidate's LAST answer (if any).
-2. Decide:
+2. Decide whether to ask a follow-up or a new question:
    - If the last answer was WEAK, INCOMPLETE, or VAGUE → ask a targeted follow-up probe that specifically addresses the gap. Set is_follow_up = true.
+   - CRITICAL RULE: DO NOT ask more than ONE follow-up question in a row. If the last question in the history was already a follow-up or addressing the same point, you MUST move to a completely NEW topic and set is_follow_up = false, even if their last answer was still bad. Do NOT repeat or rephrase questions!
    - If the last answer was STRONG or if there is no history yet → ask a brand-new question on a fresh, important topic for this role/round. Set is_follow_up = false.
-   - Occasionally (every 3rd question), regardless of answer quality, move to a completely new topic to maintain variety.
 3. {remaining} question(s) remain in the session. Adjust depth/breadth accordingly (go broader early, deeper later).
 
 Return ONLY this JSON object. No markdown. No extra text.

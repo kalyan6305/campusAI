@@ -148,7 +148,13 @@ const CodingAgentUI = () => {
 
         // For 'explain', use chat as before
         if (actionType === 'explain') {
-            const selectedText = editor.getModel().getValueInRange(editor.getSelection());
+            const model = editor.getModel();
+            if (!model) {
+                alert('Editor is still loading. Please try again.');
+                return;
+            }
+            const selection = editor.getSelection();
+            const selectedText = selection ? model.getValueInRange(selection) : '';
             const codeContext = selectedText || editor.getValue();
             if (!codeContext.trim()) {
                 alert('Editor is empty. Please enter or select some code first.');

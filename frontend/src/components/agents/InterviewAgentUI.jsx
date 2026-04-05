@@ -314,6 +314,8 @@ const InterviewAgentUI = () => {
     const [videos, setVideos] = useState([]);
     const [isLoadingVideos, setIsLoadingVideos] = useState(false);
     const [selectedVideoId, setSelectedVideoId] = useState(null);
+    const [listeningIdx, setListeningIdx] = useState(null);
+    const recognitionRef = useRef(null);
 
     useEffect(() => {
         if (company && role) {
@@ -746,6 +748,8 @@ const InterviewAgentUI = () => {
             
             setCurrentMockQuestionIndex(prev => prev + 1);
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            if (recognitionRef.current) recognitionRef.current.stop();
+            setListeningIdx(null);
         } else {
             finishMockInterview();
         }
@@ -755,6 +759,8 @@ const InterviewAgentUI = () => {
         if (currentMockQuestionIndex > 0) {
             setCurrentMockQuestionIndex(prev => prev - 1);
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            if (recognitionRef.current) recognitionRef.current.stop();
+            setListeningIdx(null);
         }
     };
 
