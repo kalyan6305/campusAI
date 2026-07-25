@@ -40,7 +40,7 @@ class GeminiProvider(LLMProvider):
             api_key = settings.GEMINI_API_KEY
             
         genai.configure(api_key=api_key)
-        self.model_name = settings.LLM_MODEL or "gemini-1.5-flash"
+        self.model_name = settings.LLM_MODEL or "gemini-2.5-flash"
         self.model = genai.GenerativeModel(self.model_name)
 
     async def generate(self, messages: List[Dict[str, str]], **kwargs) -> str:

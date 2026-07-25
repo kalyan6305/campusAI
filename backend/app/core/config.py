@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     # ── LLM ───────────────────────────────────────────
     LLM_PROVIDER: str = "gemini"          # ollama | openai | gemini
-    LLM_MODEL: str = "gemini-1.5-flash"
+    LLM_MODEL: str = "gemini-2.5-flash"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     GEMINI_API_KEY: str = ""
     GEMINI_SECONDARY_API_KEY: str = ""
